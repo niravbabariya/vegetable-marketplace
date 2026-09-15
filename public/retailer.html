@@ -148,12 +148,12 @@
 
     <div class="toolbar" style="margin:0;">
       <div class="field">
-        <label>Price (₹) *</label>
-        <input id="pPrice" type="number" min="1" placeholder="25">
+        <label>Your Base Price (₹) * <span style="font-size:0.75rem;font-weight:400;color:var(--ink-muted)">(Amount you receive)</span></label>
+        <input id="pPrice" type="number" step="0.01" min="0.01" placeholder="40" oninput="updatePriceBreakdownPreview()">
       </div>
       <div class="field">
         <label>Unit *</label>
-        <select id="pUnit">
+        <select id="pUnit" onchange="updatePriceBreakdownPreview()">
           <option>kg</option>
           <option>bunch</option>
           <option>pc</option>
@@ -161,6 +161,11 @@
           <option>litre</option>
         </select>
       </div>
+    </div>
+
+    <!-- Dynamic Pricing & Commission Live Preview -->
+    <div id="priceBreakdownPreview" style="background:#f0f7ff;border:1px solid #bfdbfe;border-radius:var(--radius);padding:0.65rem 0.85rem;font-size:0.83rem;color:#1e40af;margin:0.5rem 0;line-height:1.5;">
+      💡 Enter your base price above to see live platform fee and final buyer price breakdown.
     </div>
 
     <div class="toolbar" style="margin:0;">
@@ -209,6 +214,20 @@
 <script>
 let myProducts = [];
 let incoming = [];
+
+function updatePriceBreakdownPreview() {
+  const base = parseFloat(document.getElementById('pPrice').value || 0);
+  const unit = document.getElementById('pUnit').value || 'kg';
+  const preview = document.getElementById('priceBreakdownPreview');
+  if (base > 0) {
+    const comm = Math.round(base * 0.10 * 100) / 100;
+    const buyerPrice = Math.round((base + comm) * 100) / 100;
+    preview.innerHTML = `<strong>Pricing Breakdown:</strong><br>
+      Your listed price: <strong>₹${base}/${unit}</strong> | Platform commission (10%): <strong>₹${comm}/${unit}</strong> | Buyer price: <strong>₹${buyerPrice}/${unit}</strong> | You receive: <strong>₹${base}/${unit} per unit sold</strong>`;
+  } else {
+    preview.innerHTML = `💡 Enter your base price above to see live platform fee and final buyer price breakdown.`;
+  }
+}
 
 function showSection(id, el) {
   ['overviewSection','productsSection','ordersSection'].forEach(s => {
@@ -261,7 +280,7 @@ function renderProducts() {
       <thead>
         <tr>
           <th>Product</th>
-          <th>Price / MOQ</th>
+          <th>Pricing & Commission Breakdown</th>
           <th>Stock</th>
           <th>Grade</th>
           <th>Status</th>
@@ -270,19 +289,27 @@ function renderProducts() {
       </thead>
       <tbody>
         ${list.map(p => {
+          const base = Number(p.basePrice || p.price || 0);
+          const comm = Number(p.commissionAmount || Math.round(base * 0.1 * 100)/100);
+          const buyerP = Number(p.price || (base + comm));
+          const unit = esc(p.unit || 'kg');
+
           const stockDisplay = p.available === false
             ? '<span class="chip bad">Paused</span>'
             : p.stock <= 0 ? '<span class="chip bad">Out</span>'
-            : p.stock <= 20 ? `<span class="chip warn">${p.stock} ${p.unit}</span>`
-            : `<span class="chip good">${p.stock} ${p.unit}</span>`;
+            : p.stock <= 20 ? `<span class="chip warn">${p.stock} ${unit}</span>`
+            : `<span class="chip good">${p.stock} ${unit}</span>`;
           return `<tr>
             <td>
               <strong>${esc(p.name)}</strong>
               <div style="font-size:0.8rem;color:var(--ink-muted)">${esc(p.category)}${p.origin ? ' · ' + esc(p.origin) : ''}</div>
             </td>
             <td>
-              <span style="color:var(--gold-light);font-weight:700">₹${p.price}/${esc(p.unit)}</span>
-              <div style="font-size:0.8rem;color:var(--ink-muted)">MOQ ${p.moq||1}</div>
+              <div style="font-size:0.86rem;line-height:1.4;">
+                <strong style="color:var(--royal-deep)">Your listed price: ₹${base}/${unit}</strong><br>
+                <span style="color:var(--ink-muted);font-size:0.8rem;">Platform commission (10%): ₹${comm}/${unit} | Buyer price: ₹${buyerP}/${unit}</span><br>
+                <span style="color:#16a34a;font-weight:700;font-size:0.8rem;">You receive: ₹${base}/${unit} per unit sold</span>
+              </div>
             </td>
             <td>${stockDisplay}</td>
             <td><span class="chip">${esc(p.grade||'Standard')}</span></td>
@@ -319,6 +346,7 @@ function openModal() {
   document.getElementById('pUnit').value = 'kg';
   document.getElementById('pAvailable').value = 'true';
   document.getElementById('pHarvest').value = '';
+  updatePriceBreakdownPreview();
 }
 
 function closeModal() { document.getElementById('productModal').classList.remove('show'); }
@@ -330,7 +358,7 @@ function editProduct(id) {
   document.getElementById('pName').value = p.name;
   document.getElementById('pCategory').value = p.category;
   document.getElementById('pGrade').value = p.grade || 'Standard';
-  document.getElementById('pPrice').value = p.price;
+  document.getElementById('pPrice').value = p.basePrice || p.price;
   document.getElementById('pUnit').value = p.unit;
   document.getElementById('pStock').value = p.stock;
   document.getElementById('pMoq').value = p.moq || 1;
@@ -341,15 +369,17 @@ function editProduct(id) {
   document.getElementById('pAvailable').value = String(p.available !== false);
   document.getElementById('modalTitle').textContent = 'Edit Product';
   document.getElementById('productModal').classList.add('show');
+  updatePriceBreakdownPreview();
 }
 
 async function saveProduct() {
   const id = document.getElementById('productId').value;
+  const basePrice = parseFloat(document.getElementById('pPrice').value);
   const body = {
     name: document.getElementById('pName').value,
     category: document.getElementById('pCategory').value,
     grade: document.getElementById('pGrade').value,
-    price: parseFloat(document.getElementById('pPrice').value),
+    basePrice: basePrice,
     unit: document.getElementById('pUnit').value,
     stock: parseInt(document.getElementById('pStock').value, 10),
     moq: parseInt(document.getElementById('pMoq').value,10) || 1,
@@ -360,12 +390,12 @@ async function saveProduct() {
     available: document.getElementById('pAvailable').value === 'true'
   };
   if (!body.name) return toast('Product name is required', 'error');
-  if (!(body.price > 0)) return toast('Valid price is required', 'error');
+  if (!(body.basePrice > 0)) return toast('Valid base price is required', 'error');
   try {
     if (id) await api('/api/products/' + id, { method: 'PATCH', body: JSON.stringify(body) });
     else await api('/api/products', { method: 'POST', body: JSON.stringify(body) });
     closeModal();
-    toast('✓ Product saved');
+    toast('✓ Product saved with 10% platform commission');
     await loadProducts();
   } catch(e) { toast(e.message, 'error'); }
 }
@@ -382,12 +412,15 @@ async function deleteProduct(id) {
 async function loadOrders(silent) {
   try {
     incoming = await api('/api/orders');
+    const active = incoming.filter(o => o.status !== 'cancelled');
     const pending = incoming.filter(o => o.status === 'pending').length;
     const ready = incoming.filter(o => o.status === 'ready').length;
     const delivered = incoming.filter(o => o.status === 'delivered').length;
-    const revenue = incoming.filter(o => o.status !== 'cancelled').reduce((s,o) => s + o.total, 0);
+    const netEarnings = active.reduce((s,o) => s + (o.sellerTotal || (o.total * 0.9)), 0);
+    const grossSales = active.reduce((s,o) => s + o.total, 0);
+
     document.getElementById('rPending').textContent = pending + ready;
-    document.getElementById('rRevenue').textContent = money(revenue);
+    document.getElementById('rRevenue').textContent = money(netEarnings) + ' (Net)';
     document.getElementById('rDelivered').textContent = delivered;
     renderOrders();
   } catch(e) { if (!silent) toast(e.message, 'error'); }
@@ -413,6 +446,10 @@ function renderOrders() {
     const isDispatched = o.status === 'dispatched';
     const canCancel = ['pending','confirmed','ready'].includes(o.status);
 
+    const grossOrderVal = Number(o.total || 0);
+    const commVal = Number(o.commissionTotal || Math.round(grossOrderVal * 0.10 * 100)/100);
+    const netSellerPayout = Number(o.sellerTotal || (grossOrderVal - commVal));
+
     // Status-specific message
     let statusMsg = '';
     if (isPending) statusMsg = '<div class="status-msg info">⏳ New order — review items and confirm</div>';
@@ -424,14 +461,19 @@ function renderOrders() {
     // Item table
     const itemTable = `
       <table class="item-list">
-        <thead><tr><th>Item</th><th>Qty</th><th>Rate</th><th>Total</th></tr></thead>
+        <thead><tr><th>Item</th><th>Qty</th><th>Base Price</th><th>Buyer Price</th><th>Your Payout</th></tr></thead>
         <tbody>
-          ${o.items.map(i => `<tr>
-            <td>${esc(i.name)}</td>
-            <td>${i.quantity}</td>
-            <td>${money(i.price)}</td>
-            <td class="item-total">${money(i.subtotal)}</td>
-          </tr>`).join('')}
+          ${o.items.map(i => {
+            const iBase = Number(i.basePrice || Math.round((i.price / 1.1) * 100)/100);
+            const iSellerSub = Number(i.sellerSubtotal || (iBase * i.quantity));
+            return `<tr>
+              <td>${esc(i.name)}</td>
+              <td>${i.quantity} ${esc(i.unit||'')}</td>
+              <td>${money(iBase)}</td>
+              <td>${money(i.price)}</td>
+              <td class="item-total" style="color:#16a34a;">${money(iSellerSub)}</td>
+            </tr>`;
+          }).join('')}
         </tbody>
       </table>`;
 
@@ -463,7 +505,16 @@ function renderOrders() {
       <!-- Items -->
       ${itemTable}
 
-      <div style="margin:0.5rem 0"><strong style="color:var(--gold-light);font-size:1.05rem">Total: ${money(o.total)}</strong></div>
+      <!-- Earnings & Commission Summary Box -->
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:var(--radius);padding:0.65rem 0.85rem;margin:0.6rem 0;font-size:0.85rem;line-height:1.6;">
+        <div style="font-weight:700;color:#0f172a;margin-bottom:0.25rem;">💰 Order Financial Breakdown:</div>
+        <div style="display:flex;justify-content:space-between;color:#475569;"><span>Total Paid by Buyer:</span> <strong>${money(grossOrderVal)}</strong></div>
+        <div style="display:flex;justify-content:space-between;color:#dc2626;"><span>Platform Commission (10%):</span> <span>- ${money(commVal)}</span></div>
+        <div style="display:flex;justify-content:space-between;color:#16a34a;font-weight:700;border-top:1px dashed #cbd5e1;padding-top:0.3rem;margin-top:0.3rem;font-size:0.95rem;">
+          <span>You Receive (Seller Payout):</span> <span>${money(netSellerPayout)}</span>
+        </div>
+        <div style="font-size:0.75rem;color:#64748b;margin-top:0.25rem;">Your listed price: ₹${(netSellerPayout/ (o.items.reduce((a,b)=>a+b.quantity,0)||1)).toFixed(2)}/unit avg | Platform commission (10%) included in buyer price</div>
+      </div>
 
       ${statusMsg}
       ${actions}

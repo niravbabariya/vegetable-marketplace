@@ -49,6 +49,26 @@ const sanitize = (str) => {
 };
 
 const DATA_DIR = path.join(__dirname, 'data');
+const COMMISSION_RATE = 0.10; // 10% platform commission
+const GST_RATE = 0.18;        // 18% GST on platform commission
+
+const computeProductPrices = (p) => {
+  let basePrice = Number(p.basePrice);
+  if (isNaN(basePrice) || basePrice <= 0) {
+    const rawPrice = Number(p.price) || 0;
+    basePrice = rawPrice > 0 ? Math.round((rawPrice / (1 + COMMISSION_RATE)) * 100) / 100 : 0;
+  }
+  const commissionAmount = Math.round(basePrice * COMMISSION_RATE * 100) / 100;
+  const buyerPrice = Math.round((basePrice + commissionAmount) * 100) / 100;
+  return {
+    ...p,
+    basePrice,
+    commissionRate: COMMISSION_RATE,
+    commissionAmount,
+    price: buyerPrice,
+    youReceive: basePrice
+  };
+};
 
 const readData = (file) => {
   const filePath = path.join(DATA_DIR, file);
@@ -117,15 +137,16 @@ app.post('/api/auth/login', rateLimiter(15, 15 * 60 * 1000), async (req, res) =>
   const token = jwt.sign({ id: user.id, role: user.role, email: user.email }, JWT_SECRET);
   res.json({ token, user: { id: user.id, name: user.name, email: user.email, phone: user.phone, address: user.address, shopName: user.shopName, role: user.role } });
 });
+
 app.get('/api/products', (req, res) => {
   const users = readData('users.json');
   const products = readData('products.json')
     .filter(p => p.status !== 'deleted')
     .map(p => {
+      const computed = computeProductPrices(p);
       const retailer = users.find(u => u.id === p.retailerId);
       return {
-        ...p,
-        price: Number(p.price) || 0,
+        ...computed,
         stock: Number(p.stock) || 0,
         moq: Math.max(1, parseInt(p.moq || 1, 10) || 1),
         available: p.available !== false,
@@ -142,30 +163,64 @@ app.get('/api/products', (req, res) => {
 });
 
 app.post('/api/products', authenticate, requireRole(['retailer']), (req, res) => {
-  const { name, category, price, unit, stock, description, image, moq, bulkTiers, grade, origin, harvestDate, available } = req.body;
-  if (!name || !category || price === undefined || !unit || stock === undefined) return res.status(400).json({ error: 'Name, category, price, unit and stock are required' });
+  const { name, category, price, basePrice: reqBasePrice, unit, stock, description, image, moq, bulkTiers, grade, origin, harvestDate, available } = req.body;
+  if (!name || !category || (price === undefined && reqBasePrice === undefined) || !unit || stock === undefined) {
+    return res.status(400).json({ error: 'Name, category, base price, unit and stock are required' });
+  }
+  const inputBase = reqBasePrice !== undefined ? parseFloat(reqBasePrice) : parseFloat(price);
+  if (!(inputBase > 0) || !(parseInt(stock, 10) >= 0)) return res.status(400).json({ error: 'Invalid price or stock' });
+  
+  const computed = computeProductPrices({ basePrice: inputBase });
   const products = readData('products.json');
-  const product = { id: uuidv4(), name: String(name).trim(), category, price: parseFloat(price), unit, stock: parseInt(stock, 10), description: description || '', image: image || '', moq: Math.max(1, parseInt(moq || 1, 10)), bulkTiers: Array.isArray(bulkTiers) ? bulkTiers : [], grade: grade || 'Standard', origin: origin || '', harvestDate: harvestDate || '', available: available !== false, status: 'active', rating: 0, ratingCount: 0, retailerId: req.user.id, createdAt: new Date().toISOString() };
-  if (!(product.price > 0) || !(product.stock >= 0)) return res.status(400).json({ error: 'Invalid price or stock' });
+  const product = {
+    id: uuidv4(),
+    name: String(name).trim(),
+    category,
+    basePrice: computed.basePrice,
+    commissionRate: COMMISSION_RATE,
+    commissionAmount: computed.commissionAmount,
+    price: computed.price,
+    unit,
+    stock: parseInt(stock, 10),
+    description: description || '',
+    image: image || '',
+    moq: Math.max(1, parseInt(moq || 1, 10)),
+    bulkTiers: Array.isArray(bulkTiers) ? bulkTiers : [],
+    grade: grade || 'Standard',
+    origin: origin || '',
+    harvestDate: harvestDate || '',
+    available: available !== false,
+    status: 'active',
+    rating: 0,
+    ratingCount: 0,
+    retailerId: req.user.id,
+    createdAt: new Date().toISOString()
+  };
   products.push(product);
   writeData('products.json', products);
-  res.status(201).json(product);
+  res.status(201).json(computeProductPrices(product));
 });
 
 app.patch('/api/products/:id', authenticate, requireRole(['retailer']), (req, res) => {
   const products = readData('products.json');
   const idx = products.findIndex(p => p.id === req.params.id && p.retailerId === req.user.id);
   if (idx === -1) return res.status(404).json({ error: 'Product not found' });
-  const allowed = ['name', 'category', 'price', 'unit', 'stock', 'description', 'image', 'moq', 'bulkTiers', 'grade', 'origin', 'harvestDate', 'available'];
+  const allowed = ['name', 'category', 'basePrice', 'price', 'unit', 'stock', 'description', 'image', 'moq', 'bulkTiers', 'grade', 'origin', 'harvestDate', 'available'];
   allowed.forEach(k => { if (req.body[k] !== undefined) products[idx][k] = req.body[k]; });
-  products[idx].price = parseFloat(products[idx].price);
+  
+  const inputBase = req.body.basePrice !== undefined ? parseFloat(req.body.basePrice) : (products[idx].basePrice || products[idx].price);
+  const computed = computeProductPrices({ ...products[idx], basePrice: inputBase });
+  products[idx].basePrice = computed.basePrice;
+  products[idx].commissionRate = COMMISSION_RATE;
+  products[idx].commissionAmount = computed.commissionAmount;
+  products[idx].price = computed.price;
   products[idx].stock = parseInt(products[idx].stock, 10);
   products[idx].moq = Math.max(1, parseInt(products[idx].moq || 1, 10));
-  if (!(products[idx].price > 0) || !(products[idx].stock >= 0)) return res.status(400).json({ error: 'Invalid price or stock' });
+  if (!(products[idx].basePrice > 0) || !(products[idx].stock >= 0)) return res.status(400).json({ error: 'Invalid price or stock' });
   products[idx].id = req.params.id;
   products[idx].retailerId = req.user.id;
   writeData('products.json', products);
-  res.json(products[idx]);
+  res.json(computeProductPrices(products[idx]));
 });
 
 app.delete('/api/products/:id', authenticate, requireRole(['retailer']), (req, res) => {
@@ -213,21 +268,46 @@ app.post('/api/orders', authenticate, requireRole(['customer']), (req, res) => {
     if (!customer) return res.status(404).json({ error: 'Customer not found' });
     const products = readData('products.json');
     let total = 0;
+    let sellerTotal = 0;
+    let commissionTotal = 0;
+
     const orderItems = items.map(item => {
       const product = products.find(p => p.id === item.productId);
       if (!product || product.status === 'deleted') throw new Error('Product not found: ' + item.productId);
       const qty = parseInt(item.quantity, 10);
       if (!qty || qty < 1) throw new Error('Invalid quantity for: ' + product.name);
       if (product.stock < qty) throw new Error('Insufficient stock for: ' + product.name + ' (only ' + product.stock + ' left)');
-      const subtotal = product.price * qty;
+      
+      const computed = computeProductPrices(product);
+      const subtotal = Math.round(computed.price * qty * 100) / 100;
+      const itemSellerSubtotal = Math.round(computed.basePrice * qty * 100) / 100;
+      const itemCommissionSubtotal = Math.round(computed.commissionAmount * qty * 100) / 100;
+
       total += subtotal;
-      return { productId: item.productId, name: product.name, quantity: qty, price: product.price, subtotal };
+      sellerTotal += itemSellerSubtotal;
+      commissionTotal += itemCommissionSubtotal;
+
+      return {
+        productId: item.productId,
+        name: product.name,
+        unit: product.unit || 'kg',
+        quantity: qty,
+        basePrice: computed.basePrice,
+        commissionAmount: computed.commissionAmount,
+        price: computed.price,
+        sellerSubtotal: itemSellerSubtotal,
+        commissionSubtotal: itemCommissionSubtotal,
+        subtotal
+      };
     });
+
     orderItems.forEach(item => {
       const product = products.find(p => p.id === item.productId);
       product.stock -= item.quantity;
     });
     writeData('products.json', products);
+
+    const gstOnCommission = Math.round(commissionTotal * GST_RATE * 100) / 100;
     const order = {
       id: uuidv4(),
       customerId: req.user.id,
@@ -237,7 +317,10 @@ app.post('/api/orders', authenticate, requireRole(['customer']), (req, res) => {
       deliveryAddress,
       deliveryNotes: deliveryNotes || '',
       items: orderItems,
-      total,
+      total: Math.round(total * 100) / 100,
+      sellerTotal: Math.round(sellerTotal * 100) / 100,
+      commissionTotal: Math.round(commissionTotal * 100) / 100,
+      gstOnCommission,
       status: 'pending',
       createdAt: new Date().toISOString()
     };
@@ -249,6 +332,7 @@ app.post('/api/orders', authenticate, requireRole(['customer']), (req, res) => {
     res.status(400).json({ error: e.message });
   }
 });
+
 // Customer: edit own pending order (change quantities / remove items / address)
 app.put('/api/orders/:id', authenticate, requireRole(['customer']), (req, res) => {
   try {
@@ -260,30 +344,61 @@ app.put('/api/orders/:id', authenticate, requireRole(['customer']), (req, res) =
     const { items, deliveryAddress, deliveryNotes } = req.body;
     if (!items || !items.length) return res.status(400).json({ error: 'Order must have at least one item' });
     const products = readData('products.json');
+
     // Return old stock first so validation uses correct availability
     order.items.forEach(oldItem => {
       const p = products.find(x => x.id === oldItem.productId);
       if (p) p.stock += oldItem.quantity;
     });
+
     let total = 0;
+    let sellerTotal = 0;
+    let commissionTotal = 0;
+
     const orderItems = items.map(item => {
       const product = products.find(p => p.id === item.productId);
       if (!product || product.status === 'deleted') throw new Error('Product not available: ' + item.productId);
       const qty = parseInt(item.quantity, 10);
       if (!qty || qty < 1) throw new Error('Invalid quantity for: ' + product.name);
       if (product.stock < qty) throw new Error('Insufficient stock for: ' + product.name + ' (only ' + product.stock + ' left)');
-      const subtotal = product.price * qty;
+
+      const computed = computeProductPrices(product);
+      const subtotal = Math.round(computed.price * qty * 100) / 100;
+      const itemSellerSubtotal = Math.round(computed.basePrice * qty * 100) / 100;
+      const itemCommissionSubtotal = Math.round(computed.commissionAmount * qty * 100) / 100;
+
       total += subtotal;
-      return { productId: item.productId, name: product.name, quantity: qty, price: product.price, subtotal };
+      sellerTotal += itemSellerSubtotal;
+      commissionTotal += itemCommissionSubtotal;
+
+      return {
+        productId: item.productId,
+        name: product.name,
+        unit: product.unit || 'kg',
+        quantity: qty,
+        basePrice: computed.basePrice,
+        commissionAmount: computed.commissionAmount,
+        price: computed.price,
+        sellerSubtotal: itemSellerSubtotal,
+        commissionSubtotal: itemCommissionSubtotal,
+        subtotal
+      };
     });
+
     // Deduct new quantities
     orderItems.forEach(item => {
       const product = products.find(p => p.id === item.productId);
       product.stock -= item.quantity;
     });
     writeData('products.json', products);
+
+    const gstOnCommission = Math.round(commissionTotal * GST_RATE * 100) / 100;
     order.items = orderItems;
-    order.total = total;
+    order.total = Math.round(total * 100) / 100;
+    order.sellerTotal = Math.round(sellerTotal * 100) / 100;
+    order.commissionTotal = Math.round(commissionTotal * 100) / 100;
+    order.gstOnCommission = gstOnCommission;
+
     if (typeof deliveryAddress === 'string' && deliveryAddress.trim()) order.deliveryAddress = deliveryAddress;
     if (typeof deliveryNotes === 'string') order.deliveryNotes = deliveryNotes;
     order.updatedAt = new Date().toISOString();
@@ -293,6 +408,7 @@ app.put('/api/orders/:id', authenticate, requireRole(['customer']), (req, res) =
     res.status(400).json({ error: e.message });
   }
 });
+
 // Customer: cancel own pending order (restores stock, marks cancelled)
 app.delete('/api/orders/:id', authenticate, requireRole(['customer']), (req, res) => {
   const orders = readData('orders.json');
@@ -311,6 +427,7 @@ app.delete('/api/orders/:id', authenticate, requireRole(['customer']), (req, res
   writeData('orders.json', orders);
   res.json({ message: 'Order cancelled', order });
 });
+
 app.patch('/api/orders/:id/status', authenticate, requireRole(['retailer']), (req, res) => {
   const allowed = ['confirmed', 'ready', 'dispatched', 'delivered', 'cancelled'];
   if (!allowed.includes(req.body.status)) return res.status(400).json({ error: 'Invalid status' });
@@ -371,8 +488,15 @@ app.get('/api/admin/stats', authenticate, requireRole(['admin']), (req, res) => 
   const users = readData('users.json');
   const products = readData('products.json').filter(p => p.status !== 'deleted');
   const orders = readData('orders.json');
+  const activeOrders = orders.filter(o => o.status !== 'cancelled');
   const byStatus = {};
   orders.forEach(o => { byStatus[o.status] = (byStatus[o.status] || 0) + 1; });
+
+  const totalRevenue = activeOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+  const totalCommission = activeOrders.reduce((sum, o) => sum + (o.commissionTotal || (o.total * COMMISSION_RATE)), 0);
+  const totalGstOnCommission = Math.round(totalCommission * GST_RATE * 100) / 100;
+  const netSellerPayouts = activeOrders.reduce((sum, o) => sum + (o.sellerTotal || (o.total * (1 - COMMISSION_RATE))), 0);
+
   res.json({
     totalUsers: users.length,
     customers: users.filter(u => u.role === 'customer').length,
@@ -381,7 +505,10 @@ app.get('/api/admin/stats', authenticate, requireRole(['admin']), (req, res) => 
     lowStock: products.filter(p => p.stock <= 20).length,
     totalOrders: orders.length,
     ordersByStatus: byStatus,
-    totalRevenue: orders.filter(o => o.status !== 'cancelled').reduce((sum, o) => sum + o.total, 0)
+    totalRevenue: Math.round(totalRevenue * 100) / 100,
+    totalCommission: Math.round(totalCommission * 100) / 100,
+    totalGstOnCommission,
+    netSellerPayouts: Math.round(netSellerPayouts * 100) / 100
   });
 });
 

@@ -554,14 +554,76 @@ function renderOrderList() {
       <div style="font-size:0.87rem;color:var(--ink-muted);margin:0.3rem 0">${items}</div>
       ${o.deliveryAddress ? `<div style="font-size:0.83rem;color:var(--ink-dim)">📍 ${esc(o.deliveryAddress)}</div>` : ''}
       ${actions}
-      <div class="invoice" id="inv-${o.id}" style="display:none">
-        <strong style="color:var(--gold)">🧾 Tax Invoice</strong>
-        <div style="margin:0.5rem 0;font-size:0.85rem">
-          <div>Order #${o.id.slice(0,8).toUpperCase()}</div>
-          <div>${formatDate(o.createdAt)}</div>
-          <div style="margin:0.4rem 0">${o.items.map(i => `${esc(i.name)} × ${i.quantity} = ${money(i.subtotal)}`).join('<br>')}</div>
-          <div style="border-top:1px solid var(--border);padding-top:0.5rem;margin-top:0.5rem"><strong>Total: ${money(o.total)}</strong></div>
-          ${o.deliveryAddress ? `<div>Deliver to: ${esc(o.deliveryAddress)}</div>` : ''}
+      <div class="invoice" id="inv-${o.id}" style="display:none;background:#ffffff;border:1px solid #cbd5e1;border-radius:var(--radius);padding:1.2rem;margin-top:0.8rem;box-shadow:0 4px 15px rgba(0,0,0,0.05);color:#0f172a;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #2563eb;padding-bottom:0.6rem;margin-bottom:0.8rem;">
+          <div>
+            <h3 style="margin:0;color:#1e40af;font-size:1.15rem;font-family:'Playfair Display',serif;">🧾 TAX INVOICE & ORDER SUMMARY</h3>
+            <div style="font-size:0.78rem;color:#64748b;">Vegetable B2B Mandi Marketplace · GST Registered</div>
+          </div>
+          <button class="btn-ghost btn-sm" onclick="triggerPrint('inv-${o.id}')" style="font-size:0.8rem;">🖨️ Print Invoice</button>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;font-size:0.83rem;margin-bottom:0.8rem;color:#334155;">
+          <div>
+            <div><strong>Order ID:</strong> #${o.id.slice(0,8).toUpperCase()}</div>
+            <div><strong>Order Date:</strong> ${formatDate(o.createdAt)}</div>
+            <div><strong>Payment Status:</strong> Paid / Direct Mandi Settlement</div>
+          </div>
+          <div>
+            <div><strong>Delivery Address:</strong> ${esc(o.deliveryAddress || 'Standard Delivery')}</div>
+            ${o.deliveryNotes ? `<div><strong>Notes:</strong> ${esc(o.deliveryNotes)}</div>` : ''}
+          </div>
+        </div>
+
+        <table style="width:100%;border-collapse:collapse;font-size:0.82rem;margin-bottom:0.8rem;">
+          <thead>
+            <tr style="background:#f1f5f9;border-bottom:1px solid #cbd5e1;text-align:left;">
+              <th style="padding:0.4rem;">Product</th>
+              <th style="padding:0.4rem;">Qty</th>
+              <th style="padding:0.4rem;">Base Produce Rate</th>
+              <th style="padding:0.4rem;">Platform Fee (10%)</th>
+              <th style="padding:0.4rem;">Final Buyer Rate</th>
+              <th style="padding:0.4rem;text-align:right;">Line Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${o.items.map(i => {
+              const base = Number(i.basePrice || Math.round((i.price / 1.1) * 100)/100);
+              const comm = Number(i.commissionAmount || Math.round(base * 0.1 * 100)/100);
+              const buyerRate = Number(i.price || (base + comm));
+              return `<tr style="border-bottom:1px solid #e2e8f0;">
+                <td style="padding:0.4rem;font-weight:600;">${esc(i.name)}</td>
+                <td style="padding:0.4rem;">${i.quantity} ${esc(i.unit||'')}</td>
+                <td style="padding:0.4rem;">${money(base)}</td>
+                <td style="padding:0.4rem;">${money(comm)}</td>
+                <td style="padding:0.4rem;">${money(buyerRate)}</td>
+                <td style="padding:0.4rem;text-align:right;font-weight:600;">${money(i.subtotal)}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+
+        <!-- Itemized Tax & Settlement Breakdown Box -->
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:0.8rem;font-size:0.84rem;line-height:1.6;">
+          <div style="font-weight:700;color:#0f172a;margin-bottom:0.4rem;">Compliance & Settlement Summary:</div>
+          <div style="display:flex;justify-content:space-between;color:#475569;">
+            <span>Produce Base Value (Seller Amount):</span> <span>${money(o.sellerTotal || Math.round(o.total * 0.90 * 100)/100)}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;color:#475569;">
+            <span>Platform Commission (10%):</span> <span>${money(o.commissionTotal || Math.round(o.total * 0.10 * 100)/100)}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;color:#64748b;font-size:0.79rem;">
+            <span>└ GST on Platform Commission (18% CGST 9% + SGST 9%):</span> <span>${money(o.gstOnCommission || Math.round((o.commissionTotal || o.total * 0.10) * 0.18 * 100)/100)}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-weight:700;color:#0f172a;border-top:1px solid #cbd5e1;padding-top:0.3rem;margin-top:0.4rem;font-size:0.95rem;">
+            <span>Total Paid by Buyer (Final Price):</span> <span>${money(o.total)}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;color:#16a34a;font-weight:700;font-size:0.85rem;margin-top:0.2rem;">
+            <span>Net Seller Payout (Direct Credit):</span> <span>${money(o.sellerTotal || Math.round(o.total * 0.90 * 100)/100)}</span>
+          </div>
+        </div>
+        <div style="font-size:0.75rem;color:#64748b;margin-top:0.6rem;font-style:italic;">
+          * Note: Platform commission includes applicable 18% GST under Indian tax regulations. Buyer browsing prices already include full platform charges.
         </div>
       </div>
     </div>`;
@@ -570,7 +632,17 @@ function renderOrderList() {
 
 function printInvoice(id) {
   const el = document.getElementById('inv-' + id);
-  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+function triggerPrint(invId) {
+  const content = document.getElementById(invId);
+  if (!content) return;
+  const win = window.open('', '_blank', 'width=800,height=600');
+  win.document.write(`<html><head><title>Tax Invoice - Vegetable Mandi</title><style>body{font-family:sans-serif;padding:20px;color:#000;}</style></head><body>${content.innerHTML}</body></html>`);
+  win.document.close();
+  win.focus();
+  setTimeout(() => win.print(), 300);
 }
 
 async function reorder(id) {

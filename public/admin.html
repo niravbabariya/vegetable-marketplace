@@ -177,7 +177,15 @@ async function refreshStats() {
       </div>
       <div class="stat-card">
         <strong>${money(stats.totalRevenue)}</strong>
-        <span>GMV (non-cancelled)</span>
+        <span>Gross Buyer GMV</span>
+      </div>
+      <div class="stat-card">
+        <strong style="color:#16a34a;">${money(stats.totalCommission)}</strong>
+        <span>Platform Commission (10%)</span>
+      </div>
+      <div class="stat-card">
+        <strong>${money(stats.netSellerPayouts)}</strong>
+        <span>Net Retailer Payouts</span>
       </div>
       <div class="stat-card">
         <strong style="color:${stats.lowStock > 0 ? 'var(--warning)' : 'inherit'}">${stats.lowStock}</strong>
