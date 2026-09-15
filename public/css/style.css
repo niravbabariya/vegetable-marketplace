@@ -1675,3 +1675,58 @@ body.light-theme .item-list td {
   border-bottom: 1px solid #f1f5f9;
   color: #0f172a;
 }
+
+/* ─── FLOATING WHATSAPP BUTTON & MANDI HELPLINE ─────── */
+.whatsapp-float {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: #25D366;
+  color: #ffffff !important;
+  padding: 0.75rem 1.25rem;
+  border-radius: 999px;
+  box-shadow: 0 8px 24px rgba(37, 211, 102, 0.4);
+  font-weight: 700;
+  font-size: 0.92rem;
+  text-decoration: none;
+  transition: all 0.3s var(--spring);
+}
+.whatsapp-float:hover {
+  background: #1da851;
+  color: #ffffff !important;
+  transform: translateY(-4px) scale(1.04);
+  box-shadow: 0 12px 32px rgba(37, 211, 102, 0.55);
+}
+.whatsapp-float-icon {
+  font-size: 1.3rem;
+  display: inline-block;
+  animation: waPulse 2s infinite;
+}
+@keyframes waPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}
+
+.header-helpline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #15803d !important;
+  background: #dcfce7;
+  border: 1px solid #86efac;
+  padding: 0.4rem 0.85rem;
+  border-radius: var(--radius-pill);
+  text-decoration: none;
+  transition: all 0.2s var(--ease);
+}
+.header-helpline:hover {
+  background: #16a34a;
+  color: #ffffff !important;
+  border-color: #16a34a;
+}

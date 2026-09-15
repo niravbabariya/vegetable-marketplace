@@ -10,8 +10,9 @@
 
 <!-- NAVBAR -->
 <nav class="navbar">
-  <div class="nav-brand">🌿 Veggitable</div>
+  <div class="nav-brand" onclick="location.href='/'" style="cursor:pointer;">🌿 Veggitable</div>
   <div class="nav-user">
+    <a href="https://wa.me/919879893957?text=Hello%20Veggitable%20Mandi,%20I%20want%20to%20order%20bulk%20produce." target="_blank" class="header-helpline" style="margin-right:0.5rem;">📞 Helpline: +91 98798 93957</a>
     <span id="userName"></span>
     <a href="#" onclick="logout()">Sign out</a>
   </div>
@@ -666,5 +667,12 @@ async function cancelOrder(id) {
 
 window.onload = init;
 </script>
+
+<!-- FLOATING WHATSAPP BUTTON -->
+<a href="https://wa.me/919879893957?text=Hello%20Veggitable%20Mandi,%20I%20want%20to%20inquire%20about%20bulk%20produce%20orders." target="_blank" class="whatsapp-float" title="Order via WhatsApp">
+  <span class="whatsapp-float-icon">💬</span>
+  <span>Order on WhatsApp</span>
+</a>
+
 </body>
 </html>
