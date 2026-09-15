@@ -1,5 +1,5 @@
 /**
- * Veggitable — Shared Client Utilities
+ * Vegetable — Shared Client Utilities
  * Royal B2B Marketplace
  */
 
