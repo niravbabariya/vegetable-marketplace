@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marketplace — Veggitable</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="light-theme">
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <div class="nav-brand">🌿 Veggitable</div>
+  <div class="nav-user">
+    <span id="userName"></span>
+    <a href="#" onclick="logout()">Sign out</a>
+  </div>
+</nav>
+
+<!-- DASHBOARD -->
+<div class="dashboard">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-role">🛒 Buyer Account</div>
+      <div class="sidebar-name" id="sidebarName"></div>
+    </div>
+    <menu>
+      <li class="active" id="navMarket" onclick="showSection('productsSection', this)">
+        🛍️ Marketplace
+      </li>
+      <li id="navCart" onclick="showSection('cartSection', this)">
+        🛒 Cart <span id="cartCount" style="background:var(--gold);color:var(--royal-deep);border-radius:999px;padding:0.1rem 0.5rem;font-size:0.75rem;font-weight:800;margin-left:auto;">0</span>
+      </li>
+      <li id="navOrders" onclick="showSection('ordersSection', this)">
+        📦 My Orders
+      </li>
+    </menu>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+
+    <!-- ═══ MARKETPLACE ═══ -->
+    <section id="productsSection">
+      <div class="page-title">Fresh Marketplace</div>
+      <div class="page-subtitle">Only available items are shown. Bulk pricing applies automatically at tier quantities.</div>
+
+      <div class="stat-grid">
+        <div class="stat-card"><strong id="mProducts">—</strong><span>Available Products</span></div>
+        <div class="stat-card"><strong id="mLow">—</strong><span>Low Stock Items</span></div>
+        <div class="stat-card"><strong id="mOrders">—</strong><span>Your Orders</span></div>
+      </div>
+
+      <div class="toolbar">
+        <div class="field">
+          <label>🔍 Search</label>
+          <input type="text" id="search" placeholder="Tomato, spinach, onion…" oninput="renderProducts()">
+        </div>
+        <div class="field">
+          <label>Category</label>
+          <select id="category" onchange="renderProducts()">
+            <option value="">All Categories</option>
+            <option>Vegetables</option>
+            <option>Fruits</option>
+            <option>Leafy</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Sort By</label>
+          <select id="sort" onchange="renderProducts()">
+            <option value="">Featured</option>
+            <option value="low">Price: Low → High</option>
+            <option value="high">Price: High → Low</option>
+            <option value="stock">Highest Stock</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>&nbsp;</label>
+          <button class="btn-ghost" onclick="refreshProducts()">↻ Refresh</button>
+        </div>
+      </div>
+
+      <div class="hint" id="prodCount" style="margin-bottom:0.5rem;"></div>
+      <div id="products" class="products-grid"></div>
+    </section>
+
+    <!-- ═══ CART ═══ -->
+    <section id="cartSection" style="display:none">
+      <div class="page-title">Bulk Cart</div>
+      <div class="page-subtitle">Review your items, set delivery details, and place your bulk order.</div>
+
+      <div id="cartItems" class="cart-items"></div>
+
+      <div class="toolbar" style="margin-top:1.5rem;">
+        <div class="field">
+          <label>Delivery Slot</label>
+          <select id="deliverySlot">
+            <option>Morning (6–10 AM)</option>
+            <option>Midday (10 AM–2 PM)</option>
+            <option>Evening (2–6 PM)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Business / GST Name (optional)</label>
+          <input id="businessName" placeholder="Hotel, canteen, shop…">
+        </div>
+        <div class="field">
+          <label>GSTIN (optional)</label>
+          <input id="gstin" placeholder="22AAAAA0000A1Z5">
+        </div>
+      </div>
+
+      <label>Delivery Address *</label>
+      <textarea id="deliveryAddress" rows="3" placeholder="Full delivery address including pincode…"></textarea>
+
+      <label>Delivery Notes</label>
+      <textarea id="deliveryNotes" rows="2" placeholder="Special instructions, landmark…"></textarea>
+
+      <div class="cart-total">
+        <span>Estimated Total (incl. GST)</span>
+        <strong id="cartTotal">Rs 0</strong>
+      </div>
+
+      <div class="order-actions">
+        <button class="btn-primary" onclick="placeOrder()" style="padding:0.8rem 2rem;font-size:1rem;">✦ Place Bulk Order</button>
+        <button class="btn-ghost" onclick="exportCart()">↓ Export Cart CSV</button>
+        <button class="btn-secondary" onclick="clearCart()">🗑 Clear Cart</button>
+      </div>
+    </section>
+
+    <!-- ═══ MY ORDERS ═══ -->
+    <section id="ordersSection" style="display:none">
+      <div class="page-title">My Orders</div>
+      <div class="page-subtitle">Pending orders can be edited or cancelled. Later stages are locked by the retailer.</div>
+
+      <div class="toolbar">
+        <div class="field">
+          <label>Search Orders</label>
+          <input id="orderSearch" placeholder="Order ID or item name…" oninput="renderOrderList()">
+        </div>
+        <div class="field">
+          <label>Filter by Status</label>
+          <select id="orderStatus" onchange="renderOrderList()">
+            <option value="">All Statuses</option>
+            <option>pending</option>
+            <option>confirmed</option>
+            <option>ready</option>
+            <option>dispatched</option>
+            <option>delivered</option>
+            <option>cancelled</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>&nbsp;</label>
+          <button class="btn-ghost" onclick="exportOrders()">↓ Export CSV</button>
+        </div>
+        <div class="field">
+          <label>&nbsp;</label>
+          <button class="btn-ghost" onclick="loadOrders()">↻ Refresh</button>
+        </div>
+      </div>
+
+      <div id="orders"></div>
+
+      <!-- Edit Modal -->
+      <div class="modal" id="editModal" style="display:none;position:fixed;inset:0;background:rgba(10,5,25,0.75);backdrop-filter:blur(8px);z-index:200;justify-content:center;align-items:center;padding:1rem;">
+        <div class="modal-card">
+          <h3>Edit Order <span id="editOrderId" style="font-family:monospace;color:var(--ink-muted);font-size:1rem;"></span></h3>
+          <div id="editItems"></div>
+          <label>Delivery Address</label>
+          <textarea id="editAddress" rows="2"></textarea>
+          <label>Delivery Notes</label>
+          <textarea id="editNotes" rows="2"></textarea>
+          <div class="modal-actions">
+            <button class="btn-primary" onclick="saveEdit()">Save Changes</button>
+            <button class="btn-secondary" onclick="closeEdit()">Discard</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<div id="toastBox" class="toasts"></div>
+
+<script src="/js/app.js"></script>
+<script>
+let allProducts = [];
+let myOrders = [];
+let cart = JSON.parse(localStorage.getItem('veggiCart') || '[]');
+
+function showSection(id, el) {
+  ['productsSection','cartSection','ordersSection'].forEach(s => {
+    document.getElementById(s).style.display = s === id ? 'block' : 'none';
+  });
+  document.querySelectorAll('.sidebar menu li').forEach(x => x.classList.remove('active'));
+  if (el) el.classList.add('active');
+  if (id === 'ordersSection') loadOrders();
+}
+
+function productEmoji(p) {
+  const n = (p.name||'').toLowerCase();
+  if (n.includes('tomato')) return '🍅';
+  if (n.includes('potato')) return '🥔';
+  if (n.includes('onion')) return '🧅';
+  if (n.includes('carrot')) return '🥕';
+  if (n.includes('spinach')||n.includes('leaf')) return '🥬';
+  if (n.includes('cauli')||n.includes('broccoli')) return '🥦';
+  if (n.includes('pepper')||n.includes('capsicum')) return '🫑';
+  if (n.includes('garlic')) return '🧄';
+  if (n.includes('corn')) return '🌽';
+  if (n.includes('eggplant')||n.includes('brinjal')) return '🍆';
+  return '🥗';
+}
+
+function stockChip(p) {
+  if (p.available === false) return '<span class="chip bad">Paused</span>';
+  if (p.stock <= 0) return '<span class="chip bad">Out of Stock</span>';
+  if (p.stock <= 20) return '<span class="chip warn">Low Stock</span>';
+  return '<span class="chip good">In Stock</span>';
+}
+
+async function init() {
+  if (!localStorage.getItem('token')) return location.href = '/login.html';
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  if (user.role && user.role !== 'customer') {
+    if (user.role === 'retailer') return location.href = '/retailer.html';
+    if (user.role === 'admin') return location.href = '/admin.html';
+  }
+  document.getElementById('userName').textContent = user.name || '';
+  document.getElementById('sidebarName').textContent = user.name || '';
+  // Pre-fill delivery address
+  if (user.address) document.getElementById('deliveryAddress').value = user.address;
+  await refreshProducts();
+  renderCart();
+  await loadOrders(true);
+}
+
+async function refreshProducts() {
+  try {
+    allProducts = (await api('/api/products?availableOnly=1')).filter(p => p.available !== false && Number(p.stock) > 0);
+  } catch(e) {
+    toast('Could not load products: ' + e.message, 'error');
+    allProducts = [];
+  }
+  document.getElementById('mProducts').textContent = allProducts.length;
+  document.getElementById('mLow').textContent = allProducts.filter(p => Number(p.stock) <= 20).length;
+  renderProducts();
+}
+
+function renderProducts() {
+  const q = document.getElementById('search').value.toLowerCase();
+  const c = document.getElementById('category').value;
+  const s = document.getElementById('sort').value;
+  let list = allProducts.filter(p =>
+    p.available !== false && Number(p.stock) > 0 &&
+    p.name.toLowerCase().includes(q) &&
+    (!c || p.category === c)
+  );
+  if (s === 'low') list.sort((a,b) => a.price - b.price);
+  if (s === 'high') list.sort((a,b) => b.price - a.price);
+  if (s === 'stock') list.sort((a,b) => b.stock - a.stock);
+  document.getElementById('prodCount').textContent = list.length + ' item(s) available';
+
+  if (!list.length) {
+    document.getElementById('products').innerHTML = `
+      <div class="empty-state" style="grid-column:1/-1">
+        <div class="empty-icon">🔍</div>
+        <p>No products match your search. Try changing filters or check back later.</p>
+      </div>`;
+    return;
+  }
+
+  document.getElementById('products').innerHTML = list.map(p => {
+    const moq = p.moq || 1;
+    const stock = Number(p.stock) || 0;
+    const maxQty = Math.min(stock, 500);
+    const tiers = (p.bulkTiers || []).map(t => t.minQty + '+ → ' + money(t.price)).join(' | ');
+    const inCart = cart.find(x => x.productId === p.id);
+    return `<div class="product-card animate-in">
+      <div class="product-top">
+        <div class="product-icon">${productEmoji(p)}</div>
+        <div class="product-info">
+          <h3>${esc(p.name)}</h3>
+          <div class="price">${money(p.price)}<span style="font-size:0.8rem;font-weight:600;color:var(--ink-muted)"> /${esc(p.unit)}</span></div>
+          <div class="tier">Stock: <strong style="color:var(--ink)">${stock} ${esc(p.unit)}</strong></div>
+        </div>
+      </div>
+      <div class="product-meta">
+        <span class="chip">${esc(p.category)}</span>
+        <span class="chip">MOQ ${moq}</span>
+        ${stockChip(p)}
+        ${p.grade ? `<span class="chip">${esc(p.grade)}</span>` : ''}
+        ${p.origin ? `<span class="chip">📍 ${esc(p.origin)}</span>` : ''}
+      </div>
+      ${p.description ? `<div class="tier" style="color:var(--ink-muted)">${esc(p.description)}</div>` : ''}
+      ${tiers ? `<div class="tier" style="color:var(--gold-light)">💰 ${tiers}</div>` : ''}
+
+      <!-- Retailer & Location Info -->
+      <div style="background:rgba(212,175,55,0.06);border:1px solid rgba(212,175,55,0.22);border-radius:var(--radius);padding:0.55rem 0.75rem;margin:0.5rem 0;font-size:0.83rem;">
+        <div style="display:flex;align-items:center;justify-content:space-between;color:var(--gold-light);font-weight:700;">
+          <span>🏪 ${esc(p.shopName || p.retailerName || 'Verified Mandi Retailer')}</span>
+          <span style="font-size:0.73rem;font-weight:600;color:var(--ink-dim);background:rgba(255,255,255,0.06);padding:0.15rem 0.4rem;border-radius:4px;">Retailer</span>
+        </div>
+        <div style="color:var(--ink-muted);font-size:0.79rem;margin-top:0.25rem;display:flex;align-items:center;gap:0.3rem;">
+          📍 <span>${esc(p.retailerLocation || p.origin || 'Local Wholesale Mandi')}</span>
+        </div>
+      </div>
+
+      <div class="qty-row">
+        <input class="qty-input" id="qty-${p.id}" type="number" min="${moq}" max="${maxQty}" value="${Math.min(moq, maxQty)}" oninput="clampQty('${p.id}')">
+        <button class="btn-primary btn-sm" onclick="addToCart('${p.id}')">+ Add Bulk</button>
+        ${inCart ? `<span style="font-size:0.78rem;color:var(--gold-light)">✓ In cart (${inCart.quantity} ${esc(p.unit)})</span>` : ''}
+      </div>
+      <div class="bulk-btn-group">
+        <button class="btn-bulk-add" onclick="quickAddQty('${p.id}', 10)">+10 ${esc(p.unit)}</button>
+        <button class="btn-bulk-add" onclick="quickAddQty('${p.id}', 25)">+25 ${esc(p.unit)}</button>
+        <button class="btn-bulk-add" onclick="quickAddQty('${p.id}', 50)">+50 ${esc(p.unit)}</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function quickAddQty(id, addAmount) {
+  const el = document.getElementById('qty-' + id);
+  if (!el) return;
+  const val = parseInt(el.value || 0, 10);
+  el.value = val + addAmount;
+  clampQty(id);
+}
+
+function clampQty(id) {
+  const p = allProducts.find(x => x.id === id);
+  const el = document.getElementById('qty-' + id);
+  if (!p || !el) return;
+  const moq = p.moq || 1;
+  const stock = Number(p.stock) || 0;
+  let q = parseInt(el.value, 10);
+  if (!q || q < moq) el.value = moq;
+  if (q > stock) el.value = stock;
+}
+
+function addToCart(id) {
+  const p = allProducts.find(x => x.id === id);
+  if (!p || p.available === false || Number(p.stock) <= 0) return toast('This item is not available right now', 'error');
+  const moq = p.moq || 1;
+  const qty = parseInt(document.getElementById('qty-' + id)?.value || moq, 10);
+  if (!qty || qty < moq) return toast('Minimum order is ' + moq + ' ' + p.unit, 'error');
+  if (qty > Number(p.stock)) return toast('Only ' + p.stock + ' ' + p.unit + ' available', 'error');
+  const item = cart.find(x => x.productId === id);
+  if (item) item.quantity = qty;
+  else cart.push({ productId: id, name: p.name, price: unitPrice(p, qty), unit: p.unit, quantity: qty });
+  localStorage.setItem('veggiCart', JSON.stringify(cart));
+  renderCart();
+  toast('✓ Added ' + p.name + ' × ' + qty);
+  renderProducts(); // refresh "in cart" indicator
+}
+
+function renderCart() {
+  const count = cart.reduce((s,x) => s + x.quantity, 0);
+  const total = cart.reduce((s,x) => {
+    const p = allProducts.find(y => y.id === x.productId);
+    const pr = p ? unitPrice(p, x.quantity) : x.price;
+    return s + pr * x.quantity;
+  }, 0);
+  document.getElementById('cartCount').textContent = cart.length;
+  document.getElementById('cartTotal').textContent = money(total);
+
+  const container = document.getElementById('cartItems');
+  if (!cart.length) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">🛒</div><p>Cart is empty. Add bulk quantities from the marketplace.</p></div>`;
+    return;
+  }
+  container.innerHTML = cart.map((x,i) => `
+    <div class="cart-item">
+      <div>
+        <strong>${esc(x.name)}</strong>
+        <div style="font-size:0.83rem;color:var(--ink-muted)">${x.quantity} ${esc(x.unit||'')} × ${money(x.price)}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:0.7rem;">
+        <strong style="color:var(--gold-light)">${money(x.price * x.quantity)}</strong>
+        <button class="btn-danger btn-sm" onclick="removeItem(${i})">Remove</button>
+      </div>
+    </div>`).join('');
+}
+
+function removeItem(i) {
+  cart.splice(i, 1);
+  localStorage.setItem('veggiCart', JSON.stringify(cart));
+  renderCart();
+  toast('Item removed');
+}
+
+function clearCart() {
+  if (!cart.length) return;
+  if (!confirm('Clear entire cart?')) return;
+  cart = [];
+  localStorage.setItem('veggiCart', JSON.stringify(cart));
+  renderCart();
+  toast('Cart cleared');
+}
+
+function exportCart() {
+  if (!cart.length) return toast('Cart is empty', 'error');
+  const rows = [['Product','Qty','Unit','Unit Price','Line Total'],
+    ...cart.map(x => [x.name, x.quantity, x.unit||'', x.price, x.price * x.quantity])];
+  downloadCSV('cart.csv', rows);
+  toast('Cart exported');
+}
+
+function downloadCSV(name, rows) {
+  const csv = rows.map(r => r.map(v => '"' + String(v).replace(/"/g,'""') + '"').join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+  a.download = name; a.click();
+}
+
+async function placeOrder() {
+  if (!cart.length) return toast('Cart is empty', 'error');
+  const deliveryAddress = document.getElementById('deliveryAddress').value.trim();
+  if (!deliveryAddress) return toast('Please enter a delivery address', 'error');
+  const notes = [
+    document.getElementById('deliveryNotes').value.trim(),
+    'Slot: ' + document.getElementById('deliverySlot').value,
+    document.getElementById('businessName').value ? 'Business: ' + document.getElementById('businessName').value : '',
+    document.getElementById('gstin').value ? 'GSTIN: ' + document.getElementById('gstin').value : ''
+  ].filter(Boolean).join(' | ');
+
+  try {
+    const data = await api('/api/orders', {
+      method: 'POST',
+      body: JSON.stringify({ items: cart, deliveryAddress, deliveryNotes: notes })
+    });
+    cart = [];
+    localStorage.setItem('veggiCart', JSON.stringify(cart));
+    renderCart();
+    toast('✓ Order placed! Total: ' + money(data.total));
+    await refreshProducts();
+    await loadOrders(true);
+    showSection('ordersSection', document.getElementById('navOrders'));
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+function timeline(o) {
+  const steps = ['pending','confirmed','ready','dispatched','delivered'];
+  if (o.status === 'cancelled') return '<div class="timeline"><span class="done" style="background:var(--danger);border-color:var(--danger)">✕ Cancelled</span></div>';
+  const idx = steps.indexOf(o.status);
+  return '<div class="timeline">' + steps.map((s,i) => `<span class="${i<=idx?'done':''}">${s}</span>`).join('') + '</div>';
+}
+
+async function loadOrders(silent) {
+  try {
+    myOrders = await api('/api/orders');
+    document.getElementById('mOrders').textContent = myOrders.length;
+    renderOrderList();
+  } catch(e) { if (!silent) toast(e.message, 'error'); }
+}
+
+async function confirmReceived(id) {
+  if (!confirm('Confirm you have received this order?')) return;
+  try {
+    await api('/api/orders/' + id + '/receive', { method: 'PATCH' });
+    toast('✅ Order received — thank you!');
+    await refreshProducts();
+    await loadOrders(true);
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+function renderOrderList() {
+  const q = (document.getElementById('orderSearch').value||'').toLowerCase();
+  const s = document.getElementById('orderStatus').value;
+  const list = myOrders.filter(o =>
+    (!s || o.status === s) &&
+    (!q || o.id.toLowerCase().includes(q) || o.items.some(i => i.name.toLowerCase().includes(q)))
+  );
+  if (!list.length) {
+    document.getElementById('orders').innerHTML = `<div class="empty-state"><div class="empty-icon">📦</div><p>No orders found.</p></div>`;
+    return;
+  }
+  document.getElementById('orders').innerHTML = list.map(o => {
+    const editable = o.status === 'pending';
+    const isDispatched = o.status === 'dispatched';
+    const isDelivered = o.status === 'delivered';
+    const items = o.items.map(i => `${esc(i.name)} × ${i.quantity} <span style="color:var(--gold-light)">(${money(i.subtotal)})</span>`).join(', ');
+
+    // Status message
+    let statusMsg = '';
+    if (o.status === 'pending') statusMsg = '<div class="status-msg info">⏳ Order placed — waiting for retailer to confirm</div>';
+    else if (o.status === 'confirmed') statusMsg = '<div class="status-msg info">📋 Retailer confirmed — preparing your items</div>';
+    else if (o.status === 'ready') statusMsg = '<div class="status-msg ready">📦 Items packed — waiting for delivery pickup</div>';
+    else if (isDispatched) statusMsg = '<div class="status-msg moving">🚚 Out for delivery — confirm when you receive it!</div>';
+    else if (isDelivered) statusMsg = `<div class="status-msg success">✅ Delivered${o.receivedAt ? ' on ' + formatDate(o.receivedAt) : ''} — order complete</div>`;
+
+    // Actions
+    let actions = '';
+    if (editable) {
+      actions = `<div class="order-actions">
+          <button class="btn-primary btn-sm" onclick="openEdit('${o.id}')">✎ Edit</button>
+          <button class="btn-danger btn-sm" onclick="cancelOrder('${o.id}')">✕ Cancel</button>
+          <button class="btn-ghost btn-sm" onclick="printInvoice('${o.id}')">🧾 Invoice</button>
+        </div>`;
+    } else if (isDispatched) {
+      actions = `<div class="order-actions" style="flex-direction:column;align-items:stretch;">
+          <button class="btn-action btn-receive" onclick="confirmReceived('${o.id}')">✅ Order Received — Confirm Delivery</button>
+          <div style="display:flex;gap:0.5rem;margin-top:0.5rem;">
+            <button class="btn-ghost btn-sm" onclick="printInvoice('${o.id}')">🧾 Invoice</button>
+          </div>
+        </div>`;
+    } else {
+      actions = `<div class="order-actions">
+          <button class="btn-ghost btn-sm" onclick="printInvoice('${o.id}')">🧾 Invoice</button>
+          ${isDelivered ? `<button class="btn-ghost btn-sm" onclick="reorder('${o.id}')">↺ Reorder</button>` : ''}
+        </div>
+        ${!isDelivered && o.status !== 'cancelled' ? `<div class="locked-note">🔒 Processing (${o.status}) — retailer is handling your order</div>` : ''}`;
+    }
+
+    return `<div class="order-card animate-in">
+      <div class="order-head">
+        <span style="font-family:monospace;font-weight:700;color:var(--ink)">#${o.id.slice(0,8).toUpperCase()}</span>
+        <span class="status-badge ${o.status}">${o.status}</span>
+      </div>
+      ${timeline(o)}
+      ${statusMsg}
+      <div style="margin:0.4rem 0;">
+        <strong style="color:var(--gold-light)">${money(o.total)}</strong>
+        <span style="color:var(--ink-muted);font-size:0.85rem;margin-left:0.7rem;">${formatDate(o.createdAt)}</span>
+      </div>
+      <div style="font-size:0.87rem;color:var(--ink-muted);margin:0.3rem 0">${items}</div>
+      ${o.deliveryAddress ? `<div style="font-size:0.83rem;color:var(--ink-dim)">📍 ${esc(o.deliveryAddress)}</div>` : ''}
+      ${actions}
+      <div class="invoice" id="inv-${o.id}" style="display:none">
+        <strong style="color:var(--gold)">🧾 Tax Invoice</strong>
+        <div style="margin:0.5rem 0;font-size:0.85rem">
+          <div>Order #${o.id.slice(0,8).toUpperCase()}</div>
+          <div>${formatDate(o.createdAt)}</div>
+          <div style="margin:0.4rem 0">${o.items.map(i => `${esc(i.name)} × ${i.quantity} = ${money(i.subtotal)}`).join('<br>')}</div>
+          <div style="border-top:1px solid var(--border);padding-top:0.5rem;margin-top:0.5rem"><strong>Total: ${money(o.total)}</strong></div>
+          ${o.deliveryAddress ? `<div>Deliver to: ${esc(o.deliveryAddress)}</div>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function printInvoice(id) {
+  const el = document.getElementById('inv-' + id);
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+async function reorder(id) {
+  const o = myOrders.find(x => x.id === id);
+  if (!o) return;
+  cart = o.items.map(i => ({ productId: i.productId, name: i.name, price: i.price, unit: '', quantity: i.quantity }));
+  localStorage.setItem('veggiCart', JSON.stringify(cart));
+  renderCart();
+  showSection('cartSection', document.getElementById('navCart'));
+  toast('Order copied to cart');
+}
+
+function exportOrders() {
+  if (!myOrders.length) return toast('No orders to export', 'error');
+  const rows = [['Order ID','Status','Total','Date','Items'],
+    ...myOrders.map(o => [o.id, o.status, o.total, o.createdAt, o.items.map(i => i.name + ' x' + i.quantity).join('; ')])];
+  downloadCSV('my-orders.csv', rows);
+  toast('Orders exported');
+}
+
+let editingOrderId = null, editingItems = [];
+
+async function openEdit(id) {
+  try {
+    const orders = await api('/api/orders');
+    const o = orders.find(x => x.id === id);
+    if (!o) return toast('Order not found', 'error');
+    if (o.status !== 'pending') return toast('Only pending orders can be edited', 'error');
+    editingOrderId = o.id;
+    editingItems = o.items.map(i => ({ productId: i.productId, name: i.name, quantity: i.quantity }));
+    document.getElementById('editOrderId').textContent = '#' + o.id.slice(0,8).toUpperCase();
+    document.getElementById('editAddress').value = o.deliveryAddress || '';
+    document.getElementById('editNotes').value = o.deliveryNotes || '';
+    renderEditItems();
+    document.getElementById('editModal').style.display = 'flex';
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+function renderEditItems() {
+  document.getElementById('editItems').innerHTML = editingItems.map((it,idx) => `
+    <div class="edit-row">
+      <span>${esc(it.name)}</span>
+      <span style="display:flex;gap:0.5rem;align-items:center">
+        <input type="number" min="1" value="${it.quantity}" onchange="changeEditQty(${idx}, this.value)" style="width:75px">
+        <button class="btn-danger btn-sm" onclick="removeEditItem(${idx})">✕</button>
+      </span>
+    </div>`).join('') || '<p style="color:var(--ink-muted);font-size:0.9rem">All items removed — cancel the order instead.</p>';
+}
+
+function changeEditQty(idx, val) {
+  const q = parseInt(val, 10);
+  if (!q || q < 1) return toast('Quantity must be at least 1', 'error');
+  editingItems[idx].quantity = q;
+}
+
+function removeEditItem(idx) {
+  if (!confirm('Remove ' + editingItems[idx].name + '?')) return;
+  editingItems.splice(idx, 1);
+  renderEditItems();
+}
+
+function closeEdit() {
+  editingOrderId = null; editingItems = [];
+  document.getElementById('editModal').style.display = 'none';
+}
+
+async function saveEdit() {
+  if (!editingItems.length) return toast('Keep at least one item, or cancel the order', 'error');
+  try {
+    const data = await api('/api/orders/' + editingOrderId, {
+      method: 'PUT',
+      body: JSON.stringify({
+        items: editingItems.map(i => ({ productId: i.productId, quantity: i.quantity })),
+        deliveryAddress: document.getElementById('editAddress').value,
+        deliveryNotes: document.getElementById('editNotes').value
+      })
+    });
+    closeEdit();
+    toast('✓ Order updated: ' + money(data.total));
+    await refreshProducts();
+    await loadOrders(true);
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function cancelOrder(id) {
+  if (!confirm('Cancel this order? Stock will be restored.')) return;
+  try {
+    await api('/api/orders/' + id, { method: 'DELETE' });
+    toast('Order cancelled');
+    await refreshProducts();
+    await loadOrders(true);
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+window.onload = init;
+</script>
+</body>
+</html>

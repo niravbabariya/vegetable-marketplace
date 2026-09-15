@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Register — Veggitable</title>
+<meta name="description" content="Create your Veggitable B2B marketplace account as a buyer or retailer.">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<nav class="navbar">
+  <div class="nav-brand" onclick="location.href='/'" style="cursor:pointer;">🌿 Veggitable</div>
+  <div class="nav-links">
+    <a href="/">Home</a>
+    <a href="/login.html">Login</a>
+    <a href="/register.html" class="active">Register</a>
+  </div>
+</nav>
+
+<div class="auth-container" style="padding:1.5rem 1rem;">
+  <div class="auth-card animate-in" style="width:min(560px,100%)">
+    <div class="auth-logo">🌿 Veggitable</div>
+    <h1>Create Account</h1>
+    <p>Join the B2B fresh produce network</p>
+
+    <!-- Account type selector -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.7rem;margin:1rem 0 0.5rem;">
+      <button type="button" id="typeCustomer" class="type-btn active-type" onclick="selectType('customer')"
+        style="padding:0.8rem;border-radius:var(--radius);border:2px solid var(--gold);background:rgba(212,175,55,0.1);color:var(--gold);font-weight:700;cursor:pointer;transition:all 0.2s;font-family:inherit;">
+        🛒 Buyer<br><span style="font-size:0.78rem;font-weight:400;color:var(--ink-muted)">Bulk purchaser</span>
+      </button>
+      <button type="button" id="typeRetailer" class="type-btn" onclick="selectType('retailer')"
+        style="padding:0.8rem;border-radius:var(--radius);border:2px solid var(--border);background:transparent;color:var(--ink-muted);font-weight:700;cursor:pointer;transition:all 0.2s;font-family:inherit;">
+        🏪 Retailer<br><span style="font-size:0.78rem;font-weight:400;">Direct seller</span>
+      </button>
+    </div>
+    <input type="hidden" id="accountType" value="customer">
+
+    <div id="registerError" class="error-msg" style="display:none"></div>
+
+    <form onsubmit="handleRegister(event)" id="registerForm">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;">
+        <div>
+          <label for="name">Full Name *</label>
+          <input type="text" id="name" placeholder="John Doe" required autocomplete="name">
+        </div>
+        <div>
+          <label for="phone">Phone</label>
+          <input type="tel" id="phone" placeholder="9876543210" autocomplete="tel">
+        </div>
+      </div>
+
+      <label for="email">Email Address *</label>
+      <input type="email" id="email" placeholder="you@business.com" required autocomplete="email">
+
+      <label for="password">Password *</label>
+      <div style="position:relative;">
+        <input type="password" id="password" placeholder="Min. 6 characters" required minlength="6" style="padding-right:3rem;" autocomplete="new-password">
+        <button type="button" onclick="togglePw()" id="pwToggle"
+          style="position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--ink-muted);font-size:1.1rem;padding:0">
+          👁
+        </button>
+      </div>
+
+      <div id="shopNameGroup" style="display:none;margin-top:0.8rem;">
+        <label for="shopName">Shop / Business Name *</label>
+        <input type="text" id="shopName" placeholder="e.g. Patel Fresh Produce Mandi">
+      </div>
+
+      <label for="address" id="addressLabel">Delivery Address</label>
+      <textarea id="address" rows="2" placeholder="Street, City, PIN / Location Details"></textarea>
+
+      <button type="submit" id="regBtn" class="btn-primary" style="width:100%;margin-top:1.5rem;padding:0.85rem;font-size:1rem;">
+        Create Account →
+      </button>
+    </form>
+
+    <p class="auth-footer" style="margin-top:1.2rem;">
+      Already have an account? <a href="/login.html">Sign in →</a>
+    </p>
+  </div>
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+function selectType(type) {
+  document.getElementById('accountType').value = type;
+  const btns = document.querySelectorAll('.type-btn');
+  btns.forEach(b => {
+    b.style.borderColor = 'var(--border)';
+    b.style.background = 'transparent';
+    b.style.color = 'var(--ink-muted)';
+  });
+  const active = document.getElementById(type === 'customer' ? 'typeCustomer' : 'typeRetailer');
+  active.style.borderColor = 'var(--gold)';
+  active.style.background = 'rgba(212,175,55,0.1)';
+  active.style.color = 'var(--gold)';
+
+  // Retailer vs Buyer specific fields
+  const shopGroup = document.getElementById('shopNameGroup');
+  const addrLabel = document.getElementById('addressLabel');
+  if (type === 'retailer') {
+    if (shopGroup) shopGroup.style.display = 'block';
+    if (addrLabel) addrLabel.textContent = 'Shop Location / Address *';
+  } else {
+    if (shopGroup) shopGroup.style.display = 'none';
+    if (addrLabel) addrLabel.textContent = 'Delivery Address';
+  }
+}
+
+function togglePw() {
+  const pw = document.getElementById('password');
+  const btn = document.getElementById('pwToggle');
+  if (pw.type === 'password') { pw.type = 'text'; btn.textContent = '🙈'; }
+  else { pw.type = 'password'; btn.textContent = '👁'; }
+}
+
+function handleRegister(e) {
+  e.preventDefault();
+  const btn = document.getElementById('regBtn');
+  const errEl = document.getElementById('registerError');
+  const name = document.getElementById('name').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  const phone = document.getElementById('phone').value.trim();
+  const address = document.getElementById('address').value.trim();
+  const shopName = document.getElementById('shopName')?.value?.trim() || '';
+  const role = document.getElementById('accountType').value;
+
+  errEl.style.display = 'none';
+
+  if (!name || !email || !password) {
+    errEl.textContent = 'Name, email, and password are required.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (role === 'retailer' && !shopName) {
+    errEl.textContent = 'Shop / Business Name is required for retailers.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (password.length < 6) {
+    errEl.textContent = 'Password must be at least 6 characters.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  btn.textContent = 'Creating account…';
+  btn.disabled = true;
+
+  fetch('/api/auth/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, email, password, phone, address, shopName, role })
+  })
+  .then(async r => {
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || 'Registration failed');
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('user', JSON.stringify(data.user));
+    if (data.user.role === 'customer') location.href = '/customer.html';
+    else if (data.user.role === 'retailer') location.href = '/retailer.html';
+    else location.href = '/admin.html';
+  })
+  .catch(err => {
+    errEl.textContent = err.message;
+    errEl.style.display = 'block';
+    btn.textContent = 'Create Account →';
+    btn.disabled = false;
+  });
+}
+</script>
+</body>
+</html>

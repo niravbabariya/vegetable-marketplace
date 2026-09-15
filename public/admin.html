@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard — Veggitable</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="nav-brand">🌿 Veggitable</div>
+  <div class="nav-user">
+    <span style="color:var(--gold);font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;">Admin</span>
+    <span id="userName"></span>
+    <a href="#" onclick="logout()">Sign out</a>
+  </div>
+</nav>
+
+<div class="dashboard">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-role">⚙️ Admin Panel</div>
+      <div class="sidebar-name" id="sidebarName"></div>
+    </div>
+    <menu>
+      <li class="active" onclick="showSection('statsSection', this)">📊 Overview</li>
+      <li onclick="showSection('usersSection', this)">👥 Users</li>
+      <li onclick="showSection('ordersSection', this)">📦 Orders</li>
+    </menu>
+  </aside>
+
+  <main class="main-content">
+
+    <!-- ═══ OVERVIEW / STATS ═══ -->
+    <section id="statsSection">
+      <div class="page-title">Platform Overview</div>
+      <div class="page-subtitle">Live health metrics for the entire Veggitable marketplace.</div>
+
+      <div id="stats" class="stat-grid"></div>
+
+      <!-- Charts row -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-top:1.5rem;">
+        <div class="panel">
+          <h3 style="color:var(--gold-light);margin-bottom:1rem;font-size:1rem;font-weight:700;">📊 Orders by Status</h3>
+          <div id="statusBreakdown" style="display:flex;gap:0.5rem;flex-wrap:wrap;"></div>
+        </div>
+        <div class="panel">
+          <h3 style="color:var(--gold-light);margin-bottom:1rem;font-size:1rem;font-weight:700;">⚡ Quick Actions</h3>
+          <div style="display:flex;flex-direction:column;gap:0.6rem;">
+            <button class="btn-ghost" onclick="showSection('usersSection', document.querySelectorAll('.sidebar menu li')[1])" style="text-align:left">👥 View all users →</button>
+            <button class="btn-ghost" onclick="showSection('ordersSection', document.querySelectorAll('.sidebar menu li')[2])" style="text-align:left">📦 View all orders →</button>
+            <button class="btn-ghost" onclick="refreshStats()" style="text-align:left">↻ Refresh stats →</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ USERS ═══ -->
+    <section id="usersSection" style="display:none">
+      <div class="page-title">User Management</div>
+      <div class="page-subtitle">All registered users on the platform.</div>
+
+      <div class="toolbar">
+        <div class="field">
+          <label>Search</label>
+          <input id="uSearch" placeholder="Name or email…" oninput="renderUsers()">
+        </div>
+        <div class="field">
+          <label>Filter by Role</label>
+          <select id="uRole" onchange="renderUsers()">
+            <option value="">All Roles</option>
+            <option>customer</option>
+            <option>retailer</option>
+            <option>admin</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>&nbsp;</label>
+          <button class="btn-ghost" onclick="exportUsers()">↓ Export CSV</button>
+        </div>
+      </div>
+
+      <div id="users" style="overflow-x:auto;"></div>
+    </section>
+
+    <!-- ═══ ORDERS ═══ -->
+    <section id="ordersSection" style="display:none">
+      <div class="page-title">All Orders</div>
+      <div class="page-subtitle">Complete order history across all buyers and retailers.</div>
+
+      <div class="toolbar">
+        <div class="field">
+          <label>Filter by Status</label>
+          <select id="aStatus" onchange="renderOrders()">
+            <option value="">All Statuses</option>
+            <option>pending</option>
+            <option>confirmed</option>
+            <option>dispatched</option>
+            <option>delivered</option>
+            <option>cancelled</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Search</label>
+          <input id="aSearch" placeholder="Customer name or order ID…" oninput="renderOrders()">
+        </div>
+        <div class="field">
+          <label>&nbsp;</label>
+          <button class="btn-ghost" onclick="exportOrders()">↓ Export CSV</button>
+        </div>
+        <div class="field">
+          <label>&nbsp;</label>
+          <button class="btn-ghost" onclick="loadOrders()">↻ Refresh</button>
+        </div>
+      </div>
+
+      <div id="orders"></div>
+    </section>
+
+  </main>
+</div>
+
+<div id="toastBox" class="toasts"></div>
+<script src="/js/app.js"></script>
+<script>
+let allUsers = [];
+let allOrders = [];
+
+function showSection(id, el) {
+  ['statsSection','usersSection','ordersSection'].forEach(s => {
+    document.getElementById(s).style.display = s === id ? 'block' : 'none';
+  });
+  document.querySelectorAll('.sidebar menu li').forEach(x => x.classList.remove('active'));
+  if (el) el.classList.add('active');
+  if (id === 'usersSection') loadUsers();
+  if (id === 'ordersSection') loadOrders();
+}
+
+async function init() {
+  if (!localStorage.getItem('token')) return location.href = '/login.html';
+  const me = JSON.parse(localStorage.getItem('user') || '{}');
+  if (me.role && me.role !== 'admin') {
+    toast('Admin access only', 'error');
+    if (me.role === 'customer') return location.href = '/customer.html';
+    if (me.role === 'retailer') return location.href = '/retailer.html';
+    return location.href = '/login.html';
+  }
+  document.getElementById('userName').textContent = me.name || '';
+  document.getElementById('sidebarName').textContent = me.name || '';
+  await refreshStats();
+}
+
+async function refreshStats() {
+  try {
+    const stats = await api('/api/admin/stats');
+    document.getElementById('stats').innerHTML = `
+      <div class="stat-card">
+        <strong>${stats.totalUsers}</strong>
+        <span>Total Users</span>
+      </div>
+      <div class="stat-card">
+        <strong>${stats.customers}</strong>
+        <span>Buyers</span>
+      </div>
+      <div class="stat-card">
+        <strong>${stats.retailers}</strong>
+        <span>Retailers</span>
+      </div>
+      <div class="stat-card">
+        <strong>${stats.totalProducts}</strong>
+        <span>Live Products</span>
+      </div>
+      <div class="stat-card">
+        <strong>${stats.totalOrders}</strong>
+        <span>Total Orders</span>
+      </div>
+      <div class="stat-card">
+        <strong>${money(stats.totalRevenue)}</strong>
+        <span>GMV (non-cancelled)</span>
+      </div>
+      <div class="stat-card">
+        <strong style="color:${stats.lowStock > 0 ? 'var(--warning)' : 'inherit'}">${stats.lowStock}</strong>
+        <span>Low-Stock Items</span>
+      </div>
+    `;
+    const statusEl = document.getElementById('statusBreakdown');
+    if (stats.ordersByStatus && Object.keys(stats.ordersByStatus).length) {
+      statusEl.innerHTML = Object.entries(stats.ordersByStatus).map(([k,v]) =>
+        `<span class="status-badge ${k}" style="font-size:0.85rem;padding:0.3rem 0.85rem">${k}: ${v}</span>`
+      ).join('');
+    } else {
+      statusEl.innerHTML = '<span style="color:var(--ink-muted);font-size:0.9rem">No orders yet</span>';
+    }
+  } catch(e) {
+    toast('Admin access required', 'error');
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    return location.href = '/login.html';
+  }
+}
+
+async function loadUsers() {
+  try {
+    allUsers = await api('/api/admin/users');
+    renderUsers();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+function renderUsers() {
+  const q = (document.getElementById('uSearch').value || '').toLowerCase();
+  const r = document.getElementById('uRole').value;
+  const list = allUsers.filter(u =>
+    (!r || u.role === r) &&
+    (!q || u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q))
+  );
+  if (!list.length) {
+    document.getElementById('users').innerHTML = `<div class="empty-state"><div class="empty-icon">👥</div><p>No users found.</p></div>`;
+    return;
+  }
+  document.getElementById('users').innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Joined</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${list.map(u => `<tr>
+          <td><strong>${esc(u.name)}</strong></td>
+          <td style="font-family:monospace;font-size:0.87rem">${esc(u.email)}</td>
+          <td>
+            <span class="chip ${u.role==='admin'?'warn':u.role==='retailer'?'good':''}">${esc(u.role)}</span>
+          </td>
+          <td style="color:var(--ink-muted);font-size:0.87rem">${formatDate(u.createdAt)}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+function exportUsers() {
+  if (!allUsers.length) return toast('No users to export', 'error');
+  const rows = [['ID','Name','Email','Role','Joined'],
+    ...allUsers.map(u => [u.id, u.name, u.email, u.role, u.createdAt])];
+  downloadCSV('users.csv', rows);
+  toast('Users exported');
+}
+
+async function loadOrders() {
+  try {
+    allOrders = await api('/api/orders');
+    renderOrders();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+function renderOrders() {
+  const s = document.getElementById('aStatus').value;
+  const q = (document.getElementById('aSearch').value || '').toLowerCase();
+  const list = allOrders.filter(o =>
+    (!s || o.status === s) &&
+    (!q || (o.customerName||'').toLowerCase().includes(q) || o.id.toLowerCase().includes(q))
+  );
+  if (!list.length) {
+    document.getElementById('orders').innerHTML = `<div class="empty-state"><div class="empty-icon">📦</div><p>No orders found.</p></div>`;
+    return;
+  }
+  document.getElementById('orders').innerHTML = list.map(o => `
+    <div class="order-card">
+      <div class="order-head">
+        <span style="font-family:monospace;font-weight:700">#${o.id.slice(0,8).toUpperCase()}</span>
+        <span class="status-badge status-${o.status}">${o.status}</span>
+      </div>
+      <div style="margin:0.4rem 0">
+        <strong>${esc(o.customerName||'—')}</strong>
+        <span style="color:var(--gold-light);font-weight:700;margin-left:1rem">${money(o.total)}</span>
+        <span style="color:var(--ink-muted);font-size:0.83rem;margin-left:0.8rem">${formatDate(o.createdAt)}</span>
+      </div>
+      <div style="font-size:0.85rem;color:var(--ink-muted)">${o.items.map(i => esc(i.name)+' ×'+i.quantity).join(', ')}</div>
+      ${o.deliveryAddress ? `<div style="font-size:0.82rem;color:var(--ink-dim);margin-top:0.3rem">📍 ${esc(o.deliveryAddress)}</div>` : ''}
+    </div>`).join('');
+}
+
+function exportOrders() {
+  if (!allOrders.length) return toast('No orders to export', 'error');
+  const rows = [['Order ID','Customer','Status','Total','Date','Items'],
+    ...allOrders.map(o => [o.id, o.customerName, o.status, o.total, o.createdAt, o.items.map(i => i.name+' x'+i.quantity).join('; ')])];
+  downloadCSV('all-orders.csv', rows);
+  toast('Orders exported');
+}
+
+function downloadCSV(name, rows) {
+  const csv = rows.map(r => r.map(v => '"' + String(v).replace(/"/g,'""') + '"').join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+  a.download = name; a.click();
+}
+
+window.onload = init;
+</script>
+</body>
+</html>

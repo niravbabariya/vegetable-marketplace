@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Veggitable — Royal B2B Vegetable Marketplace</title>
+<meta name="description" content="Premium B2B fresh produce marketplace with bulk ordering, MOQ-based pricing, and GST-ready invoices. Join Veggitable today.">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<!-- ── NAVBAR ── -->
+<nav class="navbar">
+  <div class="nav-brand">🌿 Veggitable</div>
+  <div class="nav-links">
+    <a href="/" class="active">Home</a>
+    <a href="/login.html">Login</a>
+    <a href="/register.html">Register</a>
+  </div>
+</nav>
+
+<!-- ── HERO ── -->
+<div class="container">
+<section class="hero animate-in">
+  <div style="position:relative;z-index:2;">
+    <span class="hero-eyebrow">✦ Premium B2B Fresh Produce Network</span>
+    <h1>Bulk Vegetables,<br>Direct from Verified Retailers.</h1>
+    <p>Transparent mandi-style pricing, MOQ-based bulk ordering, delivery slots, GST-ready invoices, and buyer privacy by design.</p>
+    <div class="hero-buttons">
+      <button class="btn-primary" id="startOrderingBtn" onclick="location.href='/login.html'" style="padding:0.85rem 2rem;font-size:1rem;">
+        ✦ Start Ordering
+      </button>
+      <button class="btn-ghost" onclick="location.href='/register.html'" style="color:#fff;border-color:rgba(255,255,255,0.3);padding:0.85rem 1.8rem;font-size:1rem;">
+        Create Business Account →
+      </button>
+    </div>
+    <div class="hero-stats">
+      <div>
+        <strong id="statProducts">—</strong>
+        <span>Live Products</span>
+      </div>
+      <div>
+        <strong>MOQ + Tiers</strong>
+        <span>True Bulk Pricing</span>
+      </div>
+      <div>
+        <strong>Privacy-First</strong>
+        <span>Buyers stay anonymous</span>
+      </div>
+      <div>
+        <strong>GST-Ready</strong>
+        <span>Tax invoices included</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FEATURES ROW 1 ── -->
+<section class="features" style="padding-top:2.5rem;">
+  <div class="feature-card animate-in" style="animation-delay:0.1s">
+    <div class="feature-icon">📦</div>
+    <h3>Bulk-First Ordering</h3>
+    <p>MOQs, quantity tiers, stock checks, delivery slots, and reorder in one click. Built for high-volume buyers.</p>
+  </div>
+  <div class="feature-card animate-in" style="animation-delay:0.2s">
+    <div class="feature-icon">✅</div>
+    <h3>Verified Supply</h3>
+    <p>Grade, origin, harvest date, availability status, and full retailer accountability for every listing.</p>
+  </div>
+  <div class="feature-card animate-in" style="animation-delay:0.3s">
+    <div class="feature-icon">🔒</div>
+    <h3>Privacy-First Design</h3>
+    <p>Sellers see anonymous buyer IDs and delivery addresses only. No emails, no phone numbers exposed.</p>
+  </div>
+</section>
+
+<!-- ── HOW IT WORKS ── -->
+<section class="panel animate-in" style="margin:1rem 0;animation-delay:0.2s">
+  <h2 class="section-title">How It Works</h2>
+  <div class="steps">
+    <div class="step">
+      <strong>🛒 Buyers</strong>
+      <span>Browse graded produce, add bulk quantities, choose delivery slot, and track live fulfillment status.</span>
+    </div>
+    <div class="step">
+      <strong>🏪 Retailers</strong>
+      <span>List stock with MOQ and price tiers, confirm incoming orders, dispatch, and complete fulfillment.</span>
+    </div>
+    <div class="step">
+      <strong>⚙️ Platform</strong>
+      <span>Privacy-safe matching, stock protection, GST-ready totals, and a dispute-safe workflow for all.</span>
+    </div>
+  </div>
+</section>
+
+<!-- ── FEATURES ROW 2 ── -->
+<section class="features" style="padding-bottom:2.5rem;">
+  <div class="feature-card animate-in" style="animation-delay:0.1s">
+    <div class="feature-icon">🧾</div>
+    <h3>GST-Ready Invoices</h3>
+    <p>Clean totals and printable order summaries for business accounting and tax compliance.</p>
+  </div>
+  <div class="feature-card animate-in" style="animation-delay:0.2s">
+    <div class="feature-icon">🚚</div>
+    <h3>Live Fulfillment</h3>
+    <p>Pending → Confirmed → Dispatched → Delivered timeline with locked edits after confirmation.</p>
+  </div>
+  <div class="feature-card animate-in" style="animation-delay:0.3s">
+    <div class="feature-icon">📊</div>
+    <h3>Operational Control</h3>
+    <p>Low-stock signals, order filters, CSV export, one-click reorder, and full admin oversight.</p>
+  </div>
+</section>
+</div>
+
+<footer>
+  <div class="container">
+    <div class="footer-brand">🌿 Veggitable</div>
+    <span>Premium B2B Marketplace · Fresh produce, business-grade workflow.</span>
+    <span style="color:var(--ink-dim);font-size:0.82rem;">© 2026 Veggitable</span>
+  </div>
+</footer>
+
+<script src="/js/app.js"></script>
+<script>
+  // Load live product count
+  fetch('/api/products')
+    .then(r => r.json())
+    .then(p => {
+      const el = document.getElementById('statProducts');
+      if (el) el.textContent = (p.length || 0) + '+';
+    })
+    .catch(() => {});
+</script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "name": "veggitable-b2b-marketplace",
+  "version": "1.0.0",
+  "description": "B2B vegetable marketplace connecting customers to direct retailers",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "jsonwebtoken": "^9.0.0",
+    "bcryptjs": "^2.4.3",
+    "uuid": "^9.0.0"
+  }
+}

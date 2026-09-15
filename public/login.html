@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login — Veggitable</title>
+<meta name="description" content="Sign in to your Veggitable B2B marketplace account.">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<nav class="navbar">
+  <div class="nav-brand" onclick="location.href='/'" style="cursor:pointer;">🌿 Veggitable</div>
+  <div class="nav-links">
+    <a href="/">Home</a>
+    <a href="/login.html" class="active">Login</a>
+    <a href="/register.html">Register</a>
+  </div>
+</nav>
+
+<div class="auth-container">
+  <div class="auth-card animate-in">
+    <div class="auth-logo">🌿 Veggitable</div>
+    <h1>Welcome Back</h1>
+    <p>Sign in to access your dashboard</p>
+
+    <div id="loginError" class="error-msg" style="display:none"></div>
+
+    <form onsubmit="handleLogin(event)" id="loginForm">
+      <label for="email">Email Address</label>
+      <input type="email" id="email" placeholder="you@business.com" required autocomplete="email">
+
+      <label for="password">Password</label>
+      <div style="position:relative;">
+        <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password" style="padding-right:3rem;">
+        <button type="button" onclick="togglePw()" id="pwToggle"
+          style="position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--ink-muted);font-size:1.1rem;padding:0">
+          👁
+        </button>
+      </div>
+
+      <button type="submit" id="loginBtn" class="btn-primary" style="width:100%;margin-top:1.5rem;padding:0.85rem;font-size:1rem;">
+        Sign In →
+      </button>
+    </form>
+
+    <p class="auth-footer" style="margin-top:1.5rem;">
+      No account? <a href="/register.html">Create one free →</a>
+    </p>
+  </div>
+</div>
+
+<script src="/js/app.js"></script>
+<script>
+function togglePw() {
+  const pw = document.getElementById('password');
+  const btn = document.getElementById('pwToggle');
+  if (pw.type === 'password') { pw.type = 'text'; btn.textContent = '🙈'; }
+  else { pw.type = 'password'; btn.textContent = '👁'; }
+}
+
+function handleLogin(e) {
+  e.preventDefault();
+  const btn = document.getElementById('loginBtn');
+  const errEl = document.getElementById('loginError');
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+
+  errEl.style.display = 'none';
+  btn.textContent = 'Signing in…';
+  btn.disabled = true;
+
+  fetch('/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password })
+  })
+  .then(async r => {
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || 'Login failed');
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('user', JSON.stringify(data.user));
+    if (data.user.role === 'customer') location.href = '/customer.html';
+    else if (data.user.role === 'retailer') location.href = '/retailer.html';
+    else location.href = '/admin.html';
+  })
+  .catch(err => {
+    errEl.textContent = err.message;
+    errEl.style.display = 'block';
+    btn.textContent = 'Sign In →';
+    btn.disabled = false;
+  });
+}
+</script>
+</body>
+</html>

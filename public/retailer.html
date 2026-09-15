@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Retailer Dashboard — Veggitable</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="light-theme">
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <div class="nav-brand">🌿 Veggitable</div>
+  <div class="nav-user">
+    <span id="userName"></span>
+    <a href="#" onclick="logout()">Sign out</a>
+  </div>
+</nav>
+
+<div class="dashboard">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-role">🏪 Retailer Account</div>
+      <div class="sidebar-name" id="sidebarName"></div>
+    </div>
+    <menu>
+      <li class="active" onclick="showSection('overviewSection', this)">📊 Overview</li>
+      <li onclick="showSection('productsSection', this)">📦 Products</li>
+      <li onclick="showSection('ordersSection', this)">🚚 Fulfillment</li>
+    </menu>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+
+    <!-- ═══ OVERVIEW ═══ -->
+    <section id="overviewSection">
+      <div class="page-title">Seller Overview</div>
+      <div class="page-subtitle">Your real-time business snapshot. Buyers appear as anonymous IDs for privacy.</div>
+
+      <div class="stat-grid">
+        <div class="stat-card"><strong id="rRevenue">—</strong><span>Total Revenue</span></div>
+        <div class="stat-card"><strong id="rPending">—</strong><span>Needs Action</span></div>
+        <div class="stat-card"><strong id="rProducts">—</strong><span>Live Products</span></div>
+        <div class="stat-card"><strong id="rLow">—</strong><span>Low Stock</span></div>
+        <div class="stat-card"><strong id="rDelivered">—</strong><span>Delivered Orders</span></div>
+      </div>
+
+      <div class="panel" style="margin-top:1.5rem;">
+        <h3 style="color:var(--gold-light);margin-bottom:0.8rem;font-family:'Playfair Display',serif;">🔒 Privacy-Safe Fulfillment</h3>
+        <p style="color:var(--ink-muted);font-size:0.92rem;line-height:1.7">
+          Buyers appear as <strong style="color:var(--ink)">anonymous IDs</strong>. You receive item quantities, delivery address, and delivery slot only — no buyer emails or phone numbers are ever shown. This protects both parties and ensures compliant B2B operations.
+        </p>
+      </div>
+    </section>
+
+    <!-- ═══ PRODUCTS ═══ -->
+    <section id="productsSection" style="display:none">
+      <div class="retailer-header">
+        <div>
+          <div class="page-title">Products</div>
+          <div class="page-subtitle">Manage your live inventory with MOQ, bulk tiers, and availability.</div>
+        </div>
+        <button class="btn-primary" onclick="openModal()" style="padding:0.75rem 1.4rem;">+ Add Product</button>
+      </div>
+
+      <div class="toolbar">
+        <div class="field">
+          <label>Search Products</label>
+          <input id="pSearch" placeholder="Product name…" oninput="renderProducts()">
+        </div>
+        <div class="field">
+          <label>Availability</label>
+          <select id="pAvailFilter" onchange="renderProducts()">
+            <option value="">All</option>
+            <option value="available">Available</option>
+            <option value="paused">Paused</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="products" style="overflow-x:auto;"></div>
+    </section>
+
+    <!-- ═══ FULFILLMENT ═══ -->
+    <section id="ordersSection" style="display:none">
+      <div class="page-title">Fulfillment Queue</div>
+      <div class="page-subtitle">Confirm, dispatch, and deliver incoming bulk orders.</div>
+      <div class="privacy-note">🔒 Buyer PII is hidden. Fulfill using anonymous buyer ID + delivery address only.</div>
+
+      <div class="toolbar">
+        <div class="field">
+          <label>Filter by Status</label>
+          <select id="fStatus" onchange="renderOrders()">
+            <option value="">All Statuses</option>
+            <option>pending</option>
+            <option>confirmed</option>
+            <option>ready</option>
+            <option>dispatched</option>
+            <option>delivered</option>
+            <option>cancelled</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Search</label>
+          <input id="fSearch" placeholder="Order ID, buyer, or item…" oninput="renderOrders()">
+        </div>
+        <div class="field">
+          <label>&nbsp;</label>
+          <button class="btn-ghost" onclick="loadOrders()">↻ Refresh</button>
+        </div>
+      </div>
+
+      <div id="orders"></div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ═══ PRODUCT MODAL ═══ -->
+<div class="modal-overlay" id="productModal">
+  <div class="modal">
+    <h2 id="modalTitle">Add Product</h2>
+    <input type="hidden" id="productId">
+
+    <label>Product Name *</label>
+    <input id="pName" placeholder="e.g. Fresh Tomatoes">
+
+    <div class="toolbar" style="margin:0;">
+      <div class="field">
+        <label>Category *</label>
+        <select id="pCategory">
+          <option>Vegetables</option>
+          <option>Fruits</option>
+          <option>Leafy</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Grade</label>
+        <select id="pGrade">
+          <option>Premium</option>
+          <option>Standard</option>
+          <option>Economy</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="toolbar" style="margin:0;">
+      <div class="field">
+        <label>Price (₹) *</label>
+        <input id="pPrice" type="number" min="1" placeholder="25">
+      </div>
+      <div class="field">
+        <label>Unit *</label>
+        <select id="pUnit">
+          <option>kg</option>
+          <option>bunch</option>
+          <option>pc</option>
+          <option>box</option>
+          <option>litre</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="toolbar" style="margin:0;">
+      <div class="field">
+        <label>Stock Quantity *</label>
+        <input id="pStock" type="number" min="0" placeholder="200">
+      </div>
+      <div class="field">
+        <label>MOQ (Min. Order)</label>
+        <input id="pMoq" type="number" min="1" value="1">
+      </div>
+    </div>
+
+    <div class="toolbar" style="margin:0;">
+      <div class="field">
+        <label>Origin</label>
+        <input id="pOrigin" placeholder="Nashik, MH">
+      </div>
+      <div class="field">
+        <label>Harvest Date</label>
+        <input id="pHarvest" type="date">
+      </div>
+    </div>
+
+    <label>Bulk Price Tiers <span style="font-weight:400;color:var(--ink-dim)">(e.g. 50:22, 100:20)</span></label>
+    <input id="pTiers" placeholder="minQty:price, minQty:price">
+
+    <label>Description</label>
+    <textarea id="pDescription" rows="2" placeholder="Brief product description…"></textarea>
+
+    <label>Availability</label>
+    <select id="pAvailable">
+      <option value="true">✅ Available</option>
+      <option value="false">⏸ Paused</option>
+    </select>
+
+    <div class="modal-actions">
+      <button class="btn-primary" onclick="saveProduct()">Save Product</button>
+      <button class="btn-secondary" type="button" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div id="toastBox" class="toasts"></div>
+<script src="/js/app.js"></script>
+<script>
+let myProducts = [];
+let incoming = [];
+
+function showSection(id, el) {
+  ['overviewSection','productsSection','ordersSection'].forEach(s => {
+    document.getElementById(s).style.display = s === id ? 'block' : 'none';
+  });
+  document.querySelectorAll('.sidebar menu li').forEach(x => x.classList.remove('active'));
+  if (el) el.classList.add('active');
+  if (id === 'ordersSection') loadOrders();
+}
+
+async function init() {
+  if (!localStorage.getItem('token')) return location.href = '/login.html';
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  if (user.role && user.role !== 'retailer') {
+    if (user.role === 'customer') return location.href = '/customer.html';
+    if (user.role === 'admin') return location.href = '/admin.html';
+  }
+  document.getElementById('userName').textContent = user.name || '';
+  document.getElementById('sidebarName').textContent = user.name || '';
+  await loadProducts();
+  await loadOrders(true);
+}
+
+async function loadProducts() {
+  const all = await api('/api/products');
+  const me = JSON.parse(localStorage.getItem('user') || '{}');
+  myProducts = all.filter(p => p.retailerId === me.id);
+  document.getElementById('rProducts').textContent = myProducts.length;
+  document.getElementById('rLow').textContent = myProducts.filter(p => p.stock <= 20).length;
+  renderProducts();
+}
+
+function renderProducts() {
+  const q = (document.getElementById('pSearch').value || '').toLowerCase();
+  const av = document.getElementById('pAvailFilter').value;
+  let list = myProducts.filter(p => {
+    if (!p.name.toLowerCase().includes(q)) return false;
+    if (av === 'available' && p.available === false) return false;
+    if (av === 'paused' && p.available !== false) return false;
+    return true;
+  });
+
+  if (!list.length) {
+    document.getElementById('products').innerHTML = `<div class="empty-state"><div class="empty-icon">📦</div><p>No products found. Add your first product to get started.</p></div>`;
+    return;
+  }
+
+  document.getElementById('products').innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th>Price / MOQ</th>
+          <th>Stock</th>
+          <th>Grade</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${list.map(p => {
+          const stockDisplay = p.available === false
+            ? '<span class="chip bad">Paused</span>'
+            : p.stock <= 0 ? '<span class="chip bad">Out</span>'
+            : p.stock <= 20 ? `<span class="chip warn">${p.stock} ${p.unit}</span>`
+            : `<span class="chip good">${p.stock} ${p.unit}</span>`;
+          return `<tr>
+            <td>
+              <strong>${esc(p.name)}</strong>
+              <div style="font-size:0.8rem;color:var(--ink-muted)">${esc(p.category)}${p.origin ? ' · ' + esc(p.origin) : ''}</div>
+            </td>
+            <td>
+              <span style="color:var(--gold-light);font-weight:700">₹${p.price}/${esc(p.unit)}</span>
+              <div style="font-size:0.8rem;color:var(--ink-muted)">MOQ ${p.moq||1}</div>
+            </td>
+            <td>${stockDisplay}</td>
+            <td><span class="chip">${esc(p.grade||'Standard')}</span></td>
+            <td><span class="chip ${p.available!==false?'good':'bad'}">${p.available!==false?'Live':'Paused'}</span></td>
+            <td style="display:flex;gap:0.5rem;flex-wrap:wrap">
+              <button class="btn-ghost btn-sm" onclick="editProduct('${p.id}')">✎ Edit</button>
+              <button class="btn-danger btn-sm" onclick="deleteProduct('${p.id}')">✕</button>
+            </td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+}
+
+function parseTiers(text) {
+  if (!text.trim()) return [];
+  return text.split(',').map(x => {
+    const parts = x.split(':').map(s => s.trim());
+    return { minQty: parseInt(parts[0],10), price: parseFloat(parts[1]) };
+  }).filter(t => t.minQty > 0 && t.price > 0);
+}
+
+function openModal() {
+  document.getElementById('productModal').classList.add('show');
+  document.getElementById('modalTitle').textContent = 'Add Product';
+  document.getElementById('productId').value = '';
+  // Reset form
+  ['pName','pPrice','pStock','pMoq','pOrigin','pTiers','pDescription'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = id === 'pMoq' ? '1' : '';
+  });
+  document.getElementById('pCategory').value = 'Vegetables';
+  document.getElementById('pGrade').value = 'Standard';
+  document.getElementById('pUnit').value = 'kg';
+  document.getElementById('pAvailable').value = 'true';
+  document.getElementById('pHarvest').value = '';
+}
+
+function closeModal() { document.getElementById('productModal').classList.remove('show'); }
+
+function editProduct(id) {
+  const p = myProducts.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('productId').value = p.id;
+  document.getElementById('pName').value = p.name;
+  document.getElementById('pCategory').value = p.category;
+  document.getElementById('pGrade').value = p.grade || 'Standard';
+  document.getElementById('pPrice').value = p.price;
+  document.getElementById('pUnit').value = p.unit;
+  document.getElementById('pStock').value = p.stock;
+  document.getElementById('pMoq').value = p.moq || 1;
+  document.getElementById('pOrigin').value = p.origin || '';
+  document.getElementById('pHarvest').value = p.harvestDate || '';
+  document.getElementById('pTiers').value = (p.bulkTiers||[]).map(t => t.minQty+':'+t.price).join(', ');
+  document.getElementById('pDescription').value = p.description || '';
+  document.getElementById('pAvailable').value = String(p.available !== false);
+  document.getElementById('modalTitle').textContent = 'Edit Product';
+  document.getElementById('productModal').classList.add('show');
+}
+
+async function saveProduct() {
+  const id = document.getElementById('productId').value;
+  const body = {
+    name: document.getElementById('pName').value,
+    category: document.getElementById('pCategory').value,
+    grade: document.getElementById('pGrade').value,
+    price: parseFloat(document.getElementById('pPrice').value),
+    unit: document.getElementById('pUnit').value,
+    stock: parseInt(document.getElementById('pStock').value, 10),
+    moq: parseInt(document.getElementById('pMoq').value,10) || 1,
+    origin: document.getElementById('pOrigin').value,
+    harvestDate: document.getElementById('pHarvest').value,
+    bulkTiers: parseTiers(document.getElementById('pTiers').value),
+    description: document.getElementById('pDescription').value,
+    available: document.getElementById('pAvailable').value === 'true'
+  };
+  if (!body.name) return toast('Product name is required', 'error');
+  if (!(body.price > 0)) return toast('Valid price is required', 'error');
+  try {
+    if (id) await api('/api/products/' + id, { method: 'PATCH', body: JSON.stringify(body) });
+    else await api('/api/products', { method: 'POST', body: JSON.stringify(body) });
+    closeModal();
+    toast('✓ Product saved');
+    await loadProducts();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function deleteProduct(id) {
+  if (!confirm('Delete this product? This cannot be undone.')) return;
+  try {
+    await api('/api/products/' + id, { method: 'DELETE' });
+    toast('Product deleted');
+    await loadProducts();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function loadOrders(silent) {
+  try {
+    incoming = await api('/api/orders');
+    const pending = incoming.filter(o => o.status === 'pending').length;
+    const ready = incoming.filter(o => o.status === 'ready').length;
+    const delivered = incoming.filter(o => o.status === 'delivered').length;
+    const revenue = incoming.filter(o => o.status !== 'cancelled').reduce((s,o) => s + o.total, 0);
+    document.getElementById('rPending').textContent = pending + ready;
+    document.getElementById('rRevenue').textContent = money(revenue);
+    document.getElementById('rDelivered').textContent = delivered;
+    renderOrders();
+  } catch(e) { if (!silent) toast(e.message, 'error'); }
+}
+
+function renderOrders() {
+  const s = document.getElementById('fStatus').value;
+  const q = (document.getElementById('fSearch').value || '').toLowerCase();
+  const list = incoming.filter(o =>
+    (!s || o.status === s) &&
+    (!q || o.id.toLowerCase().includes(q) || (o.customerName||'').toLowerCase().includes(q) || o.items.some(i => i.name.toLowerCase().includes(q)))
+  );
+
+  if (!list.length) {
+    document.getElementById('orders').innerHTML = `<div class="empty-state"><div class="empty-icon">🚚</div><p>No incoming orders.</p></div>`;
+    return;
+  }
+
+  document.getElementById('orders').innerHTML = list.map(o => {
+    const isPending = o.status === 'pending';
+    const isConfirmed = o.status === 'confirmed';
+    const isReady = o.status === 'ready';
+    const isDispatched = o.status === 'dispatched';
+    const canCancel = ['pending','confirmed','ready'].includes(o.status);
+
+    // Status-specific message
+    let statusMsg = '';
+    if (isPending) statusMsg = '<div class="status-msg info">⏳ New order — review items and confirm</div>';
+    else if (isConfirmed) statusMsg = '<div class="status-msg info">📋 Confirmed — prepare items and mark ready when packed</div>';
+    else if (isReady) statusMsg = '<div class="status-msg ready">📦 Ready for pickup — delivery person will collect</div>';
+    else if (isDispatched) statusMsg = '<div class="status-msg moving">🚚 Out for delivery — waiting for customer confirmation</div>';
+    else if (o.status === 'delivered') statusMsg = '<div class="status-msg success">✅ Delivered — customer confirmed receipt</div>';
+
+    // Item table
+    const itemTable = `
+      <table class="item-list">
+        <thead><tr><th>Item</th><th>Qty</th><th>Rate</th><th>Total</th></tr></thead>
+        <tbody>
+          ${o.items.map(i => `<tr>
+            <td>${esc(i.name)}</td>
+            <td>${i.quantity}</td>
+            <td>${money(i.price)}</td>
+            <td class="item-total">${money(i.subtotal)}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+
+    // Action buttons
+    let actions = '<div class="order-actions">';
+    if (isPending)    actions += `<button class="btn-primary btn-sm" onclick="setStatus('${o.id}','confirmed')">✓ Confirm Order</button>`;
+    if (isConfirmed)  actions += `<button class="btn-action btn-ready" onclick="setStatus('${o.id}','ready')">📦 Ready to Deliver</button>`;
+    if (isReady)      actions += `<button class="btn-action btn-pickup" onclick="setStatus('${o.id}','dispatched')">🚚 Picked Up — Out for Delivery</button>`;
+    if (canCancel)    actions += `<button class="btn-danger btn-sm" onclick="cancelWithReason('${o.id}')">✕ Cancel</button>`;
+    actions += '</div>';
+
+    return `<div class="order-card animate-in">
+      <div class="order-head">
+        <div>
+          <span style="font-family:monospace;font-weight:700">#${o.id.slice(0,8).toUpperCase()}</span>
+          <span class="status-badge ${o.status}" style="margin-left:0.5rem">${o.status}</span>
+        </div>
+        <span style="color:var(--ink-muted);font-size:0.83rem">${formatDate(o.createdAt)}</span>
+      </div>
+
+      <!-- Buyer Info -->
+      <div class="delivery-info">
+        <div class="buyer-name">👤 ${esc(o.customerName || 'Unknown Buyer')}</div>
+        ${o.customerPhone ? `<div class="buyer-phone">📞 ${esc(o.customerPhone)}</div>` : ''}
+        <div class="buyer-address">📍 ${esc(o.deliveryAddress || o.customerAddress || 'No address')}</div>
+        ${o.deliveryNotes ? `<div style="color:var(--ink-dim);font-size:0.82rem;margin-top:0.3rem">📝 ${esc(o.deliveryNotes)}</div>` : ''}
+      </div>
+
+      <!-- Items -->
+      ${itemTable}
+
+      <div style="margin:0.5rem 0"><strong style="color:var(--gold-light);font-size:1.05rem">Total: ${money(o.total)}</strong></div>
+
+      ${statusMsg}
+      ${actions}
+    </div>`;
+  }).join('');
+}
+
+async function setStatus(id, status) {
+  try {
+    await api('/api/orders/' + id + '/status', { method: 'PATCH', body: JSON.stringify({ status }) });
+    const msgs = { confirmed: '✓ Order confirmed', ready: '📦 Marked ready for delivery', dispatched: '🚚 Order dispatched — delivery on the way', delivered: '✅ Order delivered' };
+    toast(msgs[status] || '✓ Order ' + status);
+    await loadOrders(true);
+    await loadProducts(); // refresh stock display
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function cancelWithReason(id) {
+  const reason = prompt('Cancellation reason (optional):') || '';
+  if (!confirm('Cancel this order and restore stock?')) return;
+  try {
+    await api('/api/orders/' + id + '/status', { method: 'PATCH', body: JSON.stringify({ status: 'cancelled', reason }) });
+    toast('Order cancelled');
+    await loadOrders(true);
+    await loadProducts();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+window.onload = init;
+</script>
+</body>
+</html>
