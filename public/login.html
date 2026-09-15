@@ -58,6 +58,19 @@ function togglePw() {
   else { pw.type = 'password'; btn.textContent = '👁'; }
 }
 
+// Check for checkout redirect notice
+const params = new URLSearchParams(window.location.search);
+if (params.get('redirect') === 'checkout') {
+  const errEl = document.getElementById('loginError');
+  if (errEl) {
+    errEl.style.display = 'block';
+    errEl.style.background = 'rgba(59, 130, 246, 0.12)';
+    errEl.style.color = '#2563eb';
+    errEl.style.borderColor = 'rgba(59, 130, 246, 0.3)';
+    errEl.textContent = '🔑 Please sign in or register to complete your order checkout.';
+  }
+}
+
 function handleLogin(e) {
   e.preventDefault();
   const btn = document.getElementById('loginBtn');
@@ -79,11 +92,21 @@ function handleLogin(e) {
     if (!r.ok) throw new Error(data.error || 'Login failed');
     localStorage.setItem('token', data.token);
     localStorage.setItem('user', JSON.stringify(data.user));
-    if (data.user.role === 'customer') location.href = '/customer.html';
-    else if (data.user.role === 'retailer') location.href = '/retailer.html';
-    else location.href = '/admin.html';
+
+    if (params.get('redirect') === 'checkout' && data.user.role === 'customer') {
+      location.href = '/customer.html?section=cart';
+    } else if (data.user.role === 'customer') {
+      location.href = '/customer.html';
+    } else if (data.user.role === 'retailer') {
+      location.href = '/retailer.html';
+    } else {
+      location.href = '/admin.html';
+    }
   })
   .catch(err => {
+    errEl.style.background = '';
+    errEl.style.color = '';
+    errEl.style.borderColor = '';
     errEl.textContent = err.message;
     errEl.style.display = 'block';
     btn.textContent = 'Sign In →';

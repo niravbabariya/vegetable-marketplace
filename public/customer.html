@@ -223,19 +223,35 @@ function stockChip(p) {
 }
 
 async function init() {
-  if (!localStorage.getItem('token')) return location.href = '/login.html';
+  const token = localStorage.getItem('token');
   const user = JSON.parse(localStorage.getItem('user') || '{}');
-  if (user.role && user.role !== 'customer') {
+
+  if (token && user.role && user.role !== 'customer') {
     if (user.role === 'retailer') return location.href = '/retailer.html';
     if (user.role === 'admin') return location.href = '/admin.html';
   }
-  document.getElementById('userName').textContent = user.name || '';
-  document.getElementById('sidebarName').textContent = user.name || '';
-  // Pre-fill delivery address
-  if (user.address) document.getElementById('deliveryAddress').value = user.address;
+
+  if (token && user.name) {
+    document.getElementById('userName').textContent = user.name || '';
+    document.getElementById('sidebarName').textContent = user.name || '';
+    if (user.address) document.getElementById('deliveryAddress').value = user.address;
+  } else {
+    document.getElementById('userName').innerHTML = `
+      <a href="/login.html" style="color:var(--royal-light);font-weight:700;font-size:0.88rem;margin-right:0.6rem;">Sign In</a>
+      <a href="/register.html" class="btn-primary btn-sm">Register</a>
+    `;
+    document.getElementById('sidebarName').textContent = 'Guest Visitor';
+  }
+
+  // Handle URL section params (e.g. ?section=cart)
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('section') === 'cart') {
+    showSection('cartSection', document.getElementById('navCart'));
+  }
+
   await refreshProducts();
   renderCart();
-  await loadOrders(true);
+  if (token) await loadOrders(true);
 }
 
 async function refreshProducts() {
@@ -419,6 +435,13 @@ function downloadCSV(name, rows) {
 
 async function placeOrder() {
   if (!cart.length) return toast('Cart is empty', 'error');
+  if (!localStorage.getItem('token')) {
+    toast('🔑 Please sign in or register to place your order', 'warn');
+    setTimeout(() => {
+      location.href = '/login.html?redirect=checkout';
+    }, 1200);
+    return;
+  }
   const deliveryAddress = document.getElementById('deliveryAddress').value.trim();
   if (!deliveryAddress) return toast('Please enter a delivery address', 'error');
   const notes = [
