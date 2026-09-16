@@ -121,15 +121,24 @@ app.use((req, res, next) => {
   next();
 });
 
-// ── CORS: restrict to same origin in production ──────────────────
+// ── CORS: allow same-origin + configurable via env ──────────────
+// In production (Render/Vercel), the API and frontend are served
+// from the same Express server, so CORS headers are only needed
+// for cross-origin callers. We allow the configured origin + localhost.
+const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || ''; // e.g. https://vegetable-marketplace.onrender.com
+
 app.use(cors({
   origin: (origin, cb) => {
-    // Allow same-origin / no-origin (local) requests only
-    if (!origin || origin === 'http://localhost:' + PORT || origin === 'http://127.0.0.1:' + PORT) {
-      cb(null, true);
-    } else {
-      cb(new Error('CORS: origin not allowed'));
-    }
+    // Same-origin / no-origin (server-to-server / curl) always allowed
+    if (!origin) return cb(null, true);
+    // Explicitly configured origin
+    if (ALLOWED_ORIGIN && origin === ALLOWED_ORIGIN) return cb(null, true);
+    // Any localhost (dev)
+    if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return cb(null, true);
+    // Any *.onrender.com subdomain (Render hosting)
+    if (/^https:\/\/[a-zA-Z0-9-]+\.onrender\.com$/.test(origin)) return cb(null, true);
+    // Block everything else
+    cb(new Error('CORS: origin not allowed'));
   },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
