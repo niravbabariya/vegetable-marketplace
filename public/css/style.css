@@ -990,9 +990,94 @@ footer .footer-brand {
   margin-top: 0.3rem;
 }
 
-/* ─── ITEM LIST TABLE ────────────────────────────────── */
+/* ─── MODERN RESPONSIVE TABLES ────────────────────────────── */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  background: var(--surface, #ffffff);
+  border-radius: var(--radius, 14px);
+  border: 1px solid var(--border, #e2e8f0);
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.05);
+  margin-top: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.table-responsive::-webkit-scrollbar {
+  height: 6px;
+}
+.table-responsive::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 999px;
+}
+.table-responsive::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+.table-responsive::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+table {
+  width: 100%;
+  min-width: 760px; /* Crucial: Prevents columns from compressing on mobile or narrow viewports */
+  border-collapse: collapse;
+  text-align: left;
+}
+
+th {
+  background: #f8fafc;
+  color: #475569;
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.9rem 1.1rem;
+  border-bottom: 1.5px solid #e2e8f0;
+  white-space: nowrap !important; /* CRITICAL: Never wrap headers vertically letter by letter */
+}
+
+td {
+  padding: 1rem 1.1rem;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+  font-size: 0.88rem;
+  color: var(--ink, #0f172a);
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+tbody tr:hover {
+  background: #f8fafc;
+  transition: background 0.15s ease;
+}
+
+.table-scroll-hint {
+  display: none;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 0.4rem 0.75rem;
+  border-radius: 8px;
+  margin-top: 0.75rem;
+  margin-bottom: 0.5rem;
+  border: 1px solid #e2e8f0;
+}
+@media (max-width: 768px) {
+  .table-scroll-hint {
+    display: inline-flex;
+  }
+}
+
+/* ─── ITEM LIST TABLE (Order cards) ─────────────────────── */
 .item-list {
   width: 100%;
+  min-width: 600px;
   border-collapse: collapse;
   margin: 0.5rem 0;
   font-size: 0.85rem;
@@ -1004,18 +1089,19 @@ footer .footer-brand {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  padding: 0.4rem 0.6rem;
+  padding: 0.6rem 0.8rem;
   border-bottom: 1px solid var(--border);
-  background: transparent;
+  background: #f8fafc;
+  white-space: nowrap !important;
 }
 .item-list td {
-  padding: 0.5rem 0.6rem;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
+  padding: 0.65rem 0.8rem;
+  border-bottom: 1px solid #f1f5f9;
   color: var(--ink);
   font-size: 0.85rem;
 }
 .item-list tr:last-child td { border-bottom: none; }
-.item-list .item-total { color: var(--gold-light); font-weight: 700; }
+.item-list .item-total { color: #16a34a; font-weight: 700; }
 
 /* ─── SWIPE / ACTION BUTTONS ─────────────────────────── */
 .btn-action {
