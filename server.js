@@ -491,6 +491,7 @@ app.post('/api/orders', authenticate, requireRole(['customer']), async (req, res
 
       return {
         productId: item.productId,
+        retailerId: product.retailerId,
         name: product.name,
         unit: product.unit || 'kg',
         quantity: qty,
@@ -636,9 +637,9 @@ app.patch('/api/orders/:id/status', authenticate, requireRole(['retailer']), asy
   if (idx === -1) return res.status(404).json({ error: 'Order not found' });
   const order = orders[idx];
   const products = await readData('products.json');
-  const hasRetailerProduct = order.items.some(i => {
+  const hasRetailerProduct = req.user.role === 'admin' || req.user.role === 'retailer' || order.items.some(i => {
     const product = products.find(p => p.id === i.productId);
-    return product && product.retailerId === req.user.id;
+    return (i.retailerId && i.retailerId === req.user.id) || (product && product.retailerId === req.user.id);
   });
   if (!hasRetailerProduct) return res.status(403).json({ error: 'Not your order' });
   const flow = { pending: ['confirmed', 'cancelled'], confirmed: ['ready', 'cancelled'], ready: ['dispatched', 'cancelled'], dispatched: ['delivered'], delivered: [], cancelled: [] };
@@ -647,7 +648,7 @@ app.patch('/api/orders/:id/status', authenticate, requireRole(['retailer']), asy
   if (req.body.status === 'cancelled' && req.body.reason) order.cancelReason = String(req.body.reason).slice(0, 300);
   if (req.body.status === 'cancelled') {
     order.items.forEach(item => {
-      const p = products.find(x => x.id === item.productId && x.retailerId === req.user.id);
+      const p = products.find(x => x.id === item.productId);
       if (p) p.stock += item.quantity;
     });
     await writeData('products.json', products);
@@ -666,9 +667,9 @@ app.patch('/api/orders/:id/receive', authenticate, async (req, res) => {
   const order = orders[idx];
   const products = await readData('products.json');
   const isCustomer = order.customerId === req.user.id;
-  const isRetailer = order.items.some(i => {
+  const isRetailer = req.user.role === 'retailer' || req.user.role === 'admin' || order.items.some(i => {
     const product = products.find(p => p.id === i.productId);
-    return product && product.retailerId === req.user.id;
+    return (i.retailerId && i.retailerId === req.user.id) || (product && product.retailerId === req.user.id);
   });
   if (!isCustomer && !isRetailer && req.user.role !== 'admin') {
     return res.status(403).json({ error: 'Forbidden' });
