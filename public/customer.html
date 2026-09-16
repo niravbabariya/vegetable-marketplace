@@ -15,7 +15,7 @@
   <div class="nav-user">
     <a href="https://wa.me/919879893957?text=Hello%20Vegetable%20Mandi,%20I%20want%20to%20order%20bulk%20produce." target="_blank" class="header-helpline" style="margin-right:0.5rem;">📞 Helpline: +91 98798 93957</a>
     <span id="userName"></span>
-    <a href="#" onclick="logout()">Sign out</a>
+    <a href="#" onclick="logout()" id="logoutBtn" class="btn-logout" style="display:none;">Sign out</a>
   </div>
 </nav>
 
@@ -234,15 +234,19 @@ async function init() {
   }
 
   if (token && user.name) {
-    document.getElementById('userName').textContent = user.name || '';
+    document.getElementById('userName').innerHTML = `<span style="font-weight:600;margin-right:0.5rem;color:var(--ink-muted);">${user.name || ''}</span>`;
     document.getElementById('sidebarName').textContent = user.name || '';
     if (user.address) document.getElementById('deliveryAddress').value = user.address;
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) logoutBtn.style.display = 'inline-flex';
   } else {
     document.getElementById('userName').innerHTML = `
-      <a href="/login.html" style="color:var(--royal-light);font-weight:700;font-size:0.88rem;margin-right:0.6rem;">Sign In</a>
+      <a href="/login.html" class="btn-outline btn-sm" style="margin-right:0.4rem;">Sign In</a>
       <a href="/register.html" class="btn-primary btn-sm">Register</a>
     `;
     document.getElementById('sidebarName').textContent = 'Guest Visitor';
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) logoutBtn.style.display = 'none';
   }
 
   // Handle URL section params (e.g. ?section=cart)
