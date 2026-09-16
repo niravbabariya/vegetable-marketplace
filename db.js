@@ -41,6 +41,9 @@ async function connectDB(dataDir) {
     return true;
   } catch (error) {
     console.error('❌ MongoDB Atlas connection error:', error.message);
+    if (error.message.includes('bad auth')) {
+      console.log('💡 TIP: Check your username & password in MONGODB_URI. If your password contains special characters (@, #, %, $), change your password in MongoDB Atlas to use only numbers and letters (e.g., NiravPass123).');
+    }
     console.log('⚠️ Falling back to local JSON file mode.');
     isConnected = false;
     return false;
