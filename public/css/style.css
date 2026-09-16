@@ -1696,12 +1696,14 @@ body.light-theme .item-list td {
   z-index: 1000;
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  justify-content: center;
+  width: 58px;
+  height: 58px;
+  padding: 0;
   background: #25D366;
   color: #ffffff !important;
-  padding: 0.75rem 1.25rem;
-  border-radius: 999px;
-  box-shadow: 0 8px 24px rgba(37, 211, 102, 0.4);
+  border-radius: 50%;
+  box-shadow: 0 8px 24px rgba(37, 211, 102, 0.45);
   font-weight: 700;
   font-size: 0.92rem;
   text-decoration: none;
@@ -1709,22 +1711,53 @@ body.light-theme .item-list td {
   user-select: none;
   -webkit-user-select: none;
   touch-action: none;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease, background-color 0.2s ease;
 }
 .whatsapp-float:hover {
-  background: #1da851;
+  background: #20ba5a;
   color: #ffffff !important;
-  transform: scale(1.04);
-  box-shadow: 0 12px 32px rgba(37, 211, 102, 0.55);
+  transform: scale(1.08);
+  box-shadow: 0 12px 32px rgba(37, 211, 102, 0.65);
+}
+.whatsapp-float > span:not(.whatsapp-float-icon) {
+  display: none;
 }
 .whatsapp-float-icon {
-  font-size: 1.3rem;
-  display: inline-block;
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   animation: waPulse 2s infinite;
+}
+.whatsapp-float-icon svg {
+  width: 30px;
+  height: 30px;
+  fill: currentColor;
+}
+.whatsapp-float::before {
+  content: attr(title);
+  position: absolute;
+  right: 68px;
+  background: #0f172a;
+  color: #ffffff;
+  padding: 0.45rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(8px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+}
+.whatsapp-float:hover::before {
+  opacity: 1;
+  transform: translateX(0);
 }
 @keyframes waPulse {
   0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.2); }
+  50% { transform: scale(1.12); }
 }
 
 .header-helpline {
@@ -2042,13 +2075,21 @@ img, video, svg, canvas, iframe {
     gap: 0.75rem;
   }
   .whatsapp-float {
-    bottom: 0.85rem;
-    right: 0.85rem;
-    padding: 0.6rem 0.95rem;
-    font-size: 0.82rem;
+    bottom: 1rem;
+    right: 1rem;
+    width: 52px;
+    height: 52px;
+    padding: 0;
   }
   .whatsapp-float-icon {
-    font-size: 1.1rem;
+    font-size: 1.3rem;
+  }
+  .whatsapp-float-icon svg {
+    width: 26px;
+    height: 26px;
+  }
+  .whatsapp-float::before {
+    display: none;
   }
 
   /* Collapse any 2-column inline grids inside cards/forms to 1 column */

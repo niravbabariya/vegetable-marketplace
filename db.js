@@ -116,7 +116,7 @@ async function readDataAsync(file, dataDir) {
  */
 async function writeDataAsync(file, data, dataDir) {
   const model = fileToModelMap[file];
-  
+
   if (isConnected && model && Array.isArray(data)) {
     try {
       // Replace collection content to keep in sync
