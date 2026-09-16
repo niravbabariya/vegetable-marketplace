@@ -35,8 +35,16 @@
 
     <!-- ═══ OVERVIEW / STATS ═══ -->
     <section id="statsSection">
-      <div class="page-title">Platform Overview</div>
-      <div class="page-subtitle">Live health metrics for the entire Vegetable marketplace.</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;">
+        <div>
+          <div class="page-title">Platform Overview</div>
+          <div class="page-subtitle">Live health metrics for the entire Vegetable marketplace.</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:0.4rem;background:rgba(22,163,74,0.1);border:1px solid rgba(22,163,74,0.3);padding:0.35rem 0.85rem;border-radius:999px;font-size:0.8rem;color:#16a34a;font-weight:700;">
+          <span style="display:inline-block;width:8px;height:8px;background:#16a34a;border-radius:50%;animation:pulse 1.5s infinite;"></span>
+          <span>Live Auto-Syncing (5s)</span>
+        </div>
+      </div>
 
       <div id="stats" class="stat-grid"></div>
 
@@ -150,6 +158,15 @@ async function init() {
   document.getElementById('userName').textContent = me.name || '';
   document.getElementById('sidebarName').textContent = me.name || '';
   await refreshStats();
+
+  // Live Auto-Refresh every 5 seconds for real-time user & order activity
+  setInterval(async () => {
+    try {
+      await refreshStats(true);
+      if (document.getElementById('usersSection').style.display !== 'none') await loadUsers(true);
+      if (document.getElementById('ordersSection').style.display !== 'none') await loadOrders(true);
+    } catch(e) {}
+  }, 5000);
 }
 
 async function refreshStats() {
