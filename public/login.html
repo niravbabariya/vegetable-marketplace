@@ -90,7 +90,15 @@ function handleLogin(e) {
     body: JSON.stringify({ email, password })
   })
   .then(async r => {
-    const data = await r.json();
+    // Safely parse — server might be starting up or temporarily unavailable
+    const text = await r.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      // Got HTML back (server down / deploying / 502 gateway)
+      throw new Error('⚠️ Server is starting up or temporarily unavailable. Please wait 30 seconds and try again.');
+    }
     if (!r.ok) throw new Error(data.error || 'Login failed');
     localStorage.setItem('token', data.token);
     localStorage.setItem('user', JSON.stringify(data.user));

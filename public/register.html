@@ -177,7 +177,13 @@ function handleRegister(e) {
     body: JSON.stringify({ name, email, password, phone, address, shopName, role })
   })
   .then(async r => {
-    const data = await r.json();
+    const text = await r.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      throw new Error('⚠️ Server is starting up or temporarily unavailable. Please wait 30 seconds and try again.');
+    }
     if (!r.ok) throw new Error(data.error || 'Registration failed');
     localStorage.setItem('token', data.token);
     localStorage.setItem('user', JSON.stringify(data.user));

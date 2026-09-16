@@ -97,8 +97,14 @@ async function api(path, options = {}) {
       ...(options.headers || {})
     }
   });
+  const text = await res.text();
   let data = null;
-  try { data = await res.json(); } catch { data = null; }
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch {
+    // Server returned HTML (502 / deploying / crash) — show friendly message
+    throw new Error('⚠️ Server is starting up or temporarily unavailable. Please refresh in 30 seconds.');
+  }
   if (!res.ok) throw new Error((data && data.error) || 'Request failed: ' + res.status);
   return data;
 }
