@@ -131,3 +131,95 @@ function downloadCSV(filename, rows) {
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 5000);
 }
+
+// ── Draggable WhatsApp Floating Button ──────────────────────────────
+function initDraggableWhatsApp() {
+  const el = document.querySelector('.whatsapp-float');
+  if (!el) return;
+
+  let isDragging = false;
+  let dragStarted = false;
+  let startX = 0, startY = 0;
+  let initialLeft = 0, initialTop = 0;
+
+  const onStart = (e) => {
+    dragStarted = false;
+    isDragging = true;
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+    const rect = el.getBoundingClientRect();
+    startX = clientX;
+    startY = clientY;
+    initialLeft = rect.left;
+    initialTop = rect.top;
+
+    el.style.bottom = 'auto';
+    el.style.right = 'auto';
+    el.style.left = initialLeft + 'px';
+    el.style.top = initialTop + 'px';
+    el.style.transition = 'none';
+    el.style.cursor = 'grabbing';
+  };
+
+  const onMove = (e) => {
+    if (!isDragging) return;
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+    const dx = clientX - startX;
+    const dy = clientY - startY;
+
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+      dragStarted = true;
+    }
+
+    if (dragStarted) {
+      if (e.cancelable) e.preventDefault();
+      let newLeft = initialLeft + dx;
+      let newTop = initialTop + dy;
+
+      const maxLeft = window.innerWidth - el.offsetWidth - 8;
+      const maxTop = window.innerHeight - el.offsetHeight - 8;
+      newLeft = Math.max(8, Math.min(newLeft, maxLeft));
+      newTop = Math.max(8, Math.min(newTop, maxTop));
+
+      el.style.left = newLeft + 'px';
+      el.style.top = newTop + 'px';
+    }
+  };
+
+  const onEnd = () => {
+    if (!isDragging) return;
+    isDragging = false;
+    el.style.cursor = 'grab';
+    el.style.transition = 'transform 0.2s ease, box-shadow 0.2s ease';
+
+    if (dragStarted) {
+      const clickPreventer = (clickEvt) => {
+        clickEvt.preventDefault();
+        clickEvt.stopPropagation();
+        el.removeEventListener('click', clickPreventer, true);
+      };
+      el.addEventListener('click', clickPreventer, true);
+    }
+  };
+
+  el.style.cursor = 'grab';
+  el.style.touchAction = 'none';
+  el.style.userSelect = 'none';
+
+  el.addEventListener('mousedown', onStart);
+  window.addEventListener('mousemove', onMove, { passive: false });
+  window.addEventListener('mouseup', onEnd);
+
+  el.addEventListener('touchstart', onStart, { passive: true });
+  window.addEventListener('touchmove', onMove, { passive: false });
+  window.addEventListener('touchend', onEnd);
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initDraggableWhatsApp);
+} else {
+  initDraggableWhatsApp();
+}

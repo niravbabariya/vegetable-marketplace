@@ -1689,7 +1689,6 @@ body.light-theme .item-list td {
   color: #0f172a;
 }
 
-/* ─── FLOATING WHATSAPP BUTTON & MANDI HELPLINE ─────── */
 .whatsapp-float {
   position: fixed;
   bottom: 1.5rem;
@@ -1706,12 +1705,16 @@ body.light-theme .item-list td {
   font-weight: 700;
   font-size: 0.92rem;
   text-decoration: none;
-  transition: all 0.3s var(--spring);
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 .whatsapp-float:hover {
   background: #1da851;
   color: #ffffff !important;
-  transform: translateY(-4px) scale(1.04);
+  transform: scale(1.04);
   box-shadow: 0 12px 32px rgba(37, 211, 102, 0.55);
 }
 .whatsapp-float-icon {
