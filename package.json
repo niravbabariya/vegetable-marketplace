@@ -13,6 +13,7 @@
     "dotenv": "^17.4.2",
     "express": "^4.18.2",
     "jsonwebtoken": "^9.0.0",
+    "mongoose": "^9.10.1",
     "uuid": "^9.0.0"
   }
 }

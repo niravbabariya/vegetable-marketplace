@@ -195,17 +195,13 @@ const computeProductPrices = (p) => {
   };
 };
 
-// ── Encrypted data read/write ────────────────────────────────────
-const readData = (file) => {
-  const filePath = path.join(DATA_DIR, file);
-  if (!fs.existsSync(filePath)) return [];
-  return JSON.parse(fs.readFileSync(filePath, 'utf8'));
-};
+const { connectDB, readDataAsync, writeDataAsync } = require('./db.js');
 
-const writeData = (file, data) => {
-  const filePath = path.join(DATA_DIR, file);
-  fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
-};
+// ── Encrypted data read/write ────────────────────────────────────
+const readData = async (file) => await readDataAsync(file, DATA_DIR);
+
+const writeData = async (file, data) => await writeDataAsync(file, data, DATA_DIR);
+
 
 // Encrypt phone + address before storing user, decrypt transparently on read
 function encryptUserFields(user) {
@@ -250,7 +246,7 @@ app.post('/api/auth/register', rateLimiter(5, 60 * 60 * 1000), async (req, res) 
   if (!name || !email || !password) return res.status(400).json({ error: 'Name, email and password are required' });
   if (password.length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters' });
 
-  const users = readData('users.json');
+  const users = await readData('users.json');
   if (users.find(u => u.email === email)) return res.status(400).json({ error: 'Email already exists' });
 
   const hashedPassword = await bcrypt.hash(password, 12); // cost 12 (more secure than 10)
@@ -269,7 +265,7 @@ app.post('/api/auth/register', rateLimiter(5, 60 * 60 * 1000), async (req, res) 
   // Encrypt sensitive fields before storing on disk
   const storedUser = encryptUserFields(rawUser);
   users.push(storedUser);
-  writeData('users.json', users);
+  await writeData('users.json', users);
 
   const token = jwt.sign({ id: rawUser.id, role: rawUser.role, email: rawUser.email }, JWT_SECRET, {
     algorithm: 'HS256',
@@ -283,7 +279,7 @@ app.post('/api/auth/login', rateLimiter(5, 15 * 60 * 1000), async (req, res) => 
   const cleanEmail = sanitize(email)?.toLowerCase();
   if (!cleanEmail || !password) return res.status(400).json({ error: 'Email and password are required' });
 
-  const users = readData('users.json');
+  const users = await readData('users.json');
   const user = users.find(u => u.email.toLowerCase() === cleanEmail);
 
   // Constant-time comparison to prevent timing attacks
@@ -306,9 +302,9 @@ app.post('/api/auth/login', rateLimiter(5, 15 * 60 * 1000), async (req, res) => 
 //  PRODUCT ROUTES
 // ══════════════════════════════════════════════════════════════════
 
-app.get('/api/products', (req, res) => {
-  const users = readData('users.json');
-  const products = readData('products.json')
+app.get('/api/products', async (req, res) => {
+  const users = await readData('users.json');
+  const products = (await readData('products.json'))
     .filter(p => p.status !== 'deleted')
     .map(p => {
       const computed = computeProductPrices(p);
@@ -329,7 +325,7 @@ app.get('/api/products', (req, res) => {
   res.json(products);
 });
 
-app.post('/api/products', authenticate, requireRole(['retailer']), (req, res) => {
+app.post('/api/products', authenticate, requireRole(['retailer']), async (req, res) => {
   const { name, category, price, basePrice: reqBasePrice, unit, stock, description, image, moq, bulkTiers, grade, origin, harvestDate, available } = req.body;
   if (!name || !category || (price === undefined && reqBasePrice === undefined) || !unit || stock === undefined) {
     return res.status(400).json({ error: 'Name, category, base price, unit and stock are required' });
@@ -338,7 +334,7 @@ app.post('/api/products', authenticate, requireRole(['retailer']), (req, res) =>
   if (!(inputBase > 0) || !(parseInt(stock, 10) >= 0)) return res.status(400).json({ error: 'Invalid price or stock' });
 
   const computed = computeProductPrices({ basePrice: inputBase });
-  const products = readData('products.json');
+  const products = await readData('products.json');
   const product = {
     id: uuidv4(),
     name: String(name).trim(),
@@ -364,12 +360,12 @@ app.post('/api/products', authenticate, requireRole(['retailer']), (req, res) =>
     createdAt: new Date().toISOString()
   };
   products.push(product);
-  writeData('products.json', products);
+  await writeData('products.json', products);
   res.status(201).json(computeProductPrices(product));
 });
 
-app.patch('/api/products/:id', authenticate, requireRole(['retailer']), (req, res) => {
-  const products = readData('products.json');
+app.patch('/api/products/:id', authenticate, requireRole(['retailer']), async (req, res) => {
+  const products = await readData('products.json');
   const idx = products.findIndex(p => p.id === req.params.id && p.retailerId === req.user.id);
   if (idx === -1) return res.status(404).json({ error: 'Product not found' });
   const allowed = ['name', 'category', 'basePrice', 'price', 'unit', 'stock', 'description', 'image', 'moq', 'bulkTiers', 'grade', 'origin', 'harvestDate', 'available'];
@@ -386,16 +382,16 @@ app.patch('/api/products/:id', authenticate, requireRole(['retailer']), (req, re
   if (!(products[idx].basePrice > 0) || !(products[idx].stock >= 0)) return res.status(400).json({ error: 'Invalid price or stock' });
   products[idx].id = req.params.id;
   products[idx].retailerId = req.user.id;
-  writeData('products.json', products);
+  await writeData('products.json', products);
   res.json(computeProductPrices(products[idx]));
 });
 
-app.delete('/api/products/:id', authenticate, requireRole(['retailer']), (req, res) => {
-  const products = readData('products.json');
+app.delete('/api/products/:id', authenticate, requireRole(['retailer']), async (req, res) => {
+  const products = await readData('products.json');
   const idx = products.findIndex(p => p.id === req.params.id && p.retailerId === req.user.id);
   if (idx === -1) return res.status(404).json({ error: 'Product not found' });
   products[idx].status = 'deleted';
-  writeData('products.json', products);
+  await writeData('products.json', products);
   res.json({ message: 'Product deleted' });
 });
 
@@ -403,8 +399,8 @@ app.delete('/api/products/:id', authenticate, requireRole(['retailer']), (req, r
 //  ORDER ROUTES
 // ══════════════════════════════════════════════════════════════════
 
-app.get('/api/orders', authenticate, (req, res) => {
-  const orders = readData('orders.json');
+app.get('/api/orders', authenticate, async (req, res) => {
+  const orders = await readData('orders.json');
 
   if (req.user.role === 'customer') {
     // Customer sees only their own orders — with customerId masked
@@ -416,8 +412,8 @@ app.get('/api/orders', authenticate, (req, res) => {
   }
 
   if (req.user.role === 'retailer') {
-    const products = readData('products.json');
-    const users = readData('users.json');
+    const products = await readData('products.json');
+    const users = await readData('users.json');
     const retailerOrders = orders.filter(o =>
       o.items.some(i => {
         const product = products.find(p => p.id === i.productId);
@@ -440,7 +436,7 @@ app.get('/api/orders', authenticate, (req, res) => {
 
   // Admin sees full order data
   if (req.user.role === 'admin') {
-    const users = readData('users.json');
+    const users = await readData('users.json');
     return res.json(orders.map(o => {
       const buyer = users.find(u => u.id === o.customerId);
       return {
@@ -454,17 +450,17 @@ app.get('/api/orders', authenticate, (req, res) => {
   res.status(403).json({ error: 'Forbidden' });
 });
 
-app.post('/api/orders', authenticate, requireRole(['customer']), (req, res) => {
+app.post('/api/orders', authenticate, requireRole(['customer']), async (req, res) => {
   try {
     const { items, deliveryAddress, deliveryNotes } = req.body;
     if (!items || !items.length) return res.status(400).json({ error: 'No items in order' });
     if (!deliveryAddress || !deliveryAddress.trim()) return res.status(400).json({ error: 'Delivery address required' });
 
-    const users = readData('users.json');
+    const users = await readData('users.json');
     const customer = users.find(u => u.id === req.user.id);
     if (!customer) return res.status(404).json({ error: 'Customer not found' });
 
-    const products = readData('products.json');
+    const products = await readData('products.json');
     let total = 0, sellerTotal = 0, commissionTotal = 0;
 
     const orderItems = items.map(item => {
@@ -500,7 +496,7 @@ app.post('/api/orders', authenticate, requireRole(['customer']), (req, res) => {
       const product = products.find(p => p.id === item.productId);
       product.stock -= item.quantity;
     });
-    writeData('products.json', products);
+    await writeData('products.json', products);
 
     const gstOnCommission = Math.round(commissionTotal * GST_RATE * 100) / 100;
     const order = {
@@ -519,9 +515,9 @@ app.post('/api/orders', authenticate, requireRole(['customer']), (req, res) => {
       status: 'pending',
       createdAt: new Date().toISOString()
     };
-    const orders = readData('orders.json');
+    const orders = await readData('orders.json');
     orders.push(order);
-    writeData('orders.json', orders);
+    await writeData('orders.json', orders);
 
     // Return order to customer without exposing internal IDs
     res.status(201).json({ ...order, customerId: undefined, customerEmail: undefined });
@@ -531,9 +527,9 @@ app.post('/api/orders', authenticate, requireRole(['customer']), (req, res) => {
 });
 
 // Customer: edit own pending order
-app.put('/api/orders/:id', authenticate, requireRole(['customer']), (req, res) => {
+app.put('/api/orders/:id', authenticate, requireRole(['customer']), async (req, res) => {
   try {
-    const orders = readData('orders.json');
+    const orders = await readData('orders.json');
     const idx = orders.findIndex(o => o.id === req.params.id && o.customerId === req.user.id);
     if (idx === -1) return res.status(404).json({ error: 'Order not found' });
     const order = orders[idx];
@@ -541,7 +537,7 @@ app.put('/api/orders/:id', authenticate, requireRole(['customer']), (req, res) =
 
     const { items, deliveryAddress, deliveryNotes } = req.body;
     if (!items || !items.length) return res.status(400).json({ error: 'Order must have at least one item' });
-    const products = readData('products.json');
+    const products = await readData('products.json');
 
     order.items.forEach(oldItem => {
       const p = products.find(x => x.id === oldItem.productId);
@@ -582,7 +578,7 @@ app.put('/api/orders/:id', authenticate, requireRole(['customer']), (req, res) =
       const product = products.find(p => p.id === item.productId);
       product.stock -= item.quantity;
     });
-    writeData('products.json', products);
+    await writeData('products.json', products);
 
     const gstOnCommission = Math.round(commissionTotal * GST_RATE * 100) / 100;
     order.items = orderItems;
@@ -593,7 +589,7 @@ app.put('/api/orders/:id', authenticate, requireRole(['customer']), (req, res) =
     if (typeof deliveryAddress === 'string' && deliveryAddress.trim()) order.deliveryAddress = deliveryAddress;
     if (typeof deliveryNotes === 'string') order.deliveryNotes = deliveryNotes;
     order.updatedAt = new Date().toISOString();
-    writeData('orders.json', orders);
+    await writeData('orders.json', orders);
 
     res.json({ ...order, customerId: undefined, customerEmail: undefined });
   } catch (e) {
@@ -602,34 +598,35 @@ app.put('/api/orders/:id', authenticate, requireRole(['customer']), (req, res) =
 });
 
 // Customer: cancel own pending order
-app.delete('/api/orders/:id', authenticate, requireRole(['customer']), (req, res) => {
-  const orders = readData('orders.json');
+app.delete('/api/orders/:id', authenticate, requireRole(['customer']), async (req, res) => {
+  const orders = await readData('orders.json');
   const idx = orders.findIndex(o => o.id === req.params.id && o.customerId === req.user.id);
   if (idx === -1) return res.status(404).json({ error: 'Order not found' });
   const order = orders[idx];
   if (order.status !== 'pending') return res.status(400).json({ error: 'Only pending orders can be cancelled (current: ' + order.status + ')' });
-  const products = readData('products.json');
+  const products = await readData('products.json');
   order.items.forEach(item => {
     const p = products.find(x => x.id === item.productId);
     if (p) p.stock += item.quantity;
   });
-  writeData('products.json', products);
+  await writeData('products.json', products);
   order.status = 'cancelled';
   order.updatedAt = new Date().toISOString();
-  writeData('orders.json', orders);
+  await writeData('orders.json', orders);
   res.json({ message: 'Order cancelled', order: { ...order, customerId: undefined, customerEmail: undefined } });
 });
 
 // Retailer: update order status
-app.patch('/api/orders/:id/status', authenticate, requireRole(['retailer']), (req, res) => {
+app.patch('/api/orders/:id/status', authenticate, requireRole(['retailer']), async (req, res) => {
   const allowed = ['confirmed', 'ready', 'dispatched', 'delivered', 'cancelled'];
   if (!allowed.includes(req.body.status)) return res.status(400).json({ error: 'Invalid status' });
-  const orders = readData('orders.json');
+  const orders = await readData('orders.json');
   const idx = orders.findIndex(o => o.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Order not found' });
   const order = orders[idx];
+  const products = await readData('products.json');
   const hasRetailerProduct = order.items.some(i => {
-    const product = readData('products.json').find(p => p.id === i.productId);
+    const product = products.find(p => p.id === i.productId);
     return product && product.retailerId === req.user.id;
   });
   if (!hasRetailerProduct) return res.status(403).json({ error: 'Not your order' });
@@ -638,28 +635,28 @@ app.patch('/api/orders/:id/status', authenticate, requireRole(['retailer']), (re
   if (req.body.status === 'cancelled' && !['pending', 'confirmed', 'ready'].includes(order.status)) return res.status(400).json({ error: 'Only pending/confirmed/ready orders can be cancelled' });
   if (req.body.status === 'cancelled' && req.body.reason) order.cancelReason = String(req.body.reason).slice(0, 300);
   if (req.body.status === 'cancelled') {
-    const products = readData('products.json');
     order.items.forEach(item => {
       const p = products.find(x => x.id === item.productId && x.retailerId === req.user.id);
       if (p) p.stock += item.quantity;
     });
-    writeData('products.json', products);
+    await writeData('products.json', products);
   }
   order.status = req.body.status;
   order.updatedAt = new Date().toISOString();
-  writeData('orders.json', orders);
+  await writeData('orders.json', orders);
   res.json({ ...order, customerId: undefined, customerEmail: undefined });
 });
 
 // Confirm receipt (dispatched/ready → delivered)
-app.patch('/api/orders/:id/receive', authenticate, (req, res) => {
-  const orders = readData('orders.json');
+app.patch('/api/orders/:id/receive', authenticate, async (req, res) => {
+  const orders = await readData('orders.json');
   const idx = orders.findIndex(o => o.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Order not found' });
   const order = orders[idx];
+  const products = await readData('products.json');
   const isCustomer = order.customerId === req.user.id;
   const isRetailer = order.items.some(i => {
-    const product = readData('products.json').find(p => p.id === i.productId);
+    const product = products.find(p => p.id === i.productId);
     return product && product.retailerId === req.user.id;
   });
   if (!isCustomer && !isRetailer && req.user.role !== 'admin') {
@@ -671,7 +668,7 @@ app.patch('/api/orders/:id/receive', authenticate, (req, res) => {
   order.status = 'delivered';
   order.receivedAt = new Date().toISOString();
   order.updatedAt = new Date().toISOString();
-  writeData('orders.json', orders);
+  await writeData('orders.json', orders);
   res.json({ ...order, customerId: undefined, customerEmail: undefined });
 });
 
@@ -679,10 +676,10 @@ app.patch('/api/orders/:id/receive', authenticate, (req, res) => {
 //  ADMIN ROUTES (admin only — full data with decrypted fields)
 // ══════════════════════════════════════════════════════════════════
 
-app.get('/api/admin/stats', authenticate, requireRole(['admin']), (req, res) => {
-  const users = readData('users.json');
-  const products = readData('products.json').filter(p => p.status !== 'deleted');
-  const orders = readData('orders.json');
+app.get('/api/admin/stats', authenticate, requireRole(['admin']), async (req, res) => {
+  const users = await readData('users.json');
+  const products = (await readData('products.json')).filter(p => p.status !== 'deleted');
+  const orders = await readData('orders.json');
   const activeOrders = orders.filter(o => o.status !== 'cancelled');
   const byStatus = {};
   orders.forEach(o => { byStatus[o.status] = (byStatus[o.status] || 0) + 1; });
@@ -708,16 +705,16 @@ app.get('/api/admin/stats', authenticate, requireRole(['admin']), (req, res) => 
 });
 
 // Admin: list all users with decrypted PII (admin only)
-app.get('/api/admin/users', authenticate, requireRole(['admin']), (req, res) => {
-  const users = readData('users.json');
+app.get('/api/admin/users', authenticate, requireRole(['admin']), async (req, res) => {
+  const users = await readData('users.json');
   // Admin sees full user data including decrypted phone/address — NO password
   res.json(users.map(u => safeUserForAdmin(u)));
 });
 
 // Admin: list all orders with full detail
-app.get('/api/admin/orders', authenticate, requireRole(['admin']), (req, res) => {
-  const orders = readData('orders.json');
-  const users = readData('users.json');
+app.get('/api/admin/orders', authenticate, requireRole(['admin']), async (req, res) => {
+  const orders = await readData('orders.json');
+  const users = await readData('users.json');
   res.json(orders.map(o => {
     const buyer = users.find(u => u.id === o.customerId);
     return {
@@ -728,29 +725,26 @@ app.get('/api/admin/orders', authenticate, requireRole(['admin']), (req, res) =>
 });
 
 // ══════════════════════════════════════════════════════════════════
-//  DATA SEEDING (first run only)
+//  DATA SEEDING & SERVER INITIALIZATION
 // ══════════════════════════════════════════════════════════════════
 
 const SEED_DIR = path.join(DATA_DIR, 'seed');
 
-function seedData() {
-  // Use committed seed files when live data doesn't exist yet.
-  // Live data files are in .gitignore so they survive git pull/push safely.
+async function seedData() {
   const files = [
     { live: 'users.json',    seed: 'users.seed.json'    },
     { live: 'products.json', seed: 'products.seed.json' },
     { live: 'orders.json',   seed: null                  }
   ];
 
-  files.forEach(({ live, seed }) => {
+  for (const { live, seed } of files) {
     const livePath  = path.join(DATA_DIR, live);
-    if (fs.existsSync(livePath)) return; // never overwrite live data
+    if (fs.existsSync(livePath)) continue; // never overwrite live data
 
     if (!seed) {
-      // orders always start empty on a fresh deployment
       fs.writeFileSync(livePath, '[]');
       console.log('[seed] Created empty ' + live);
-      return;
+      continue;
     }
 
     const seedPath = path.join(SEED_DIR, seed);
@@ -758,22 +752,25 @@ function seedData() {
       fs.copyFileSync(seedPath, livePath);
       console.log('[seed] Initialised ' + live + ' from seed');
     } else {
-      // Seed file missing — fall back to minimal inline defaults
       console.warn('[seed] Seed file not found: ' + seedPath + ' — using inline fallback');
       if (live === 'users.json') {
         const hash = bcrypt.hashSync('admin123', 12);
-        writeData('users.json', [
+        await writeData('users.json', [
           { id: 'admin1', name: 'Admin', email: 'admin@market.com', password: hash,
             phone: encryptField('9999999999'), address: encryptField('Market HQ'),
             role: 'admin', createdAt: new Date().toISOString() }
         ]);
       } else if (live === 'products.json') {
-        writeData('products.json', []);
+        await writeData('products.json', []);
       }
     }
-  });
+  }
 }
 
-seedData();
+async function startServer() {
+  await connectDB(DATA_DIR);
+  await seedData();
+  app.listen(PORT, () => console.log('Marketplace running on http://localhost:' + PORT));
+}
 
-app.listen(PORT, () => console.log('Marketplace running on http://localhost:' + PORT));
+startServer();
