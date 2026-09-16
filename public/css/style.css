@@ -1159,6 +1159,20 @@ tbody tr:hover { background: rgba(255,255,255,0.03); }
   position: relative;
   display: block;
 }
+
+@media (max-width: 640px) {
+  .modal-overlay {
+    padding: 0.5rem;
+    align-items: flex-end; /* Mobile bottom sheet feel or centered */
+  }
+  .modal-overlay .modal,
+  .modal-card {
+    padding: 1.25rem 1rem;
+    border-radius: 20px 20px 0 0;
+    max-height: 92vh;
+    width: 100%;
+  }
+}
 .modal-overlay .modal::before,
 .modal-card::before {
   content: '';
@@ -2533,4 +2547,131 @@ img, video, svg, canvas, iframe {
   display: flex;
   align-items: center;
   gap: 0.25rem;
+}
+
+/* ── Mobile Responsive Optimizations for Produce Autocomplete (max-width: 640px) ── */
+@media (max-width: 640px) {
+  .produce-input-field {
+    padding: 0.72rem 2.2rem 0.72rem 2.4rem !important;
+    font-size: 0.9rem !important;
+    border-radius: 10px !important;
+  }
+  .produce-input-icon {
+    left: 0.75rem;
+    font-size: 1.05rem;
+  }
+  .produce-clear-btn {
+    right: 0.65rem;
+    width: 22px;
+    height: 22px;
+  }
+
+  .produce-autocomplete-dropdown {
+    border-radius: 12px;
+    top: calc(100% + 5px);
+    box-shadow: 0 16px 36px rgba(15, 23, 42, 0.2), 0 0 0 1px rgba(37, 99, 235, 0.15);
+  }
+
+  .produce-tabs-header {
+    padding: 0.45rem 0.5rem;
+    gap: 0.3rem;
+  }
+  .produce-tabs-title {
+    display: none; /* Hide label to allow full width for category filter pills */
+  }
+  .produce-tabs-chips {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    gap: 0.25rem;
+  }
+  .produce-tab-chip {
+    flex: 1;
+    text-align: center;
+    justify-content: center;
+    padding: 0.28rem 0.3rem;
+    font-size: 0.72rem;
+  }
+
+  .produce-items-container {
+    max-height: 215px; /* Prevent taking up too much vertical space on phone screens */
+  }
+
+  .produce-autocomplete-item {
+    padding: 0.6rem 0.65rem;
+    gap: 0.45rem;
+  }
+  .produce-autocomplete-item:hover,
+  .produce-autocomplete-item.active {
+    padding-left: calc(0.65rem - 3.5px);
+    border-left-width: 3.5px;
+  }
+
+  .produce-item-left {
+    gap: 0.55rem;
+    flex: 1;
+    min-width: 0;
+  }
+  .produce-icon-box {
+    width: 35px;
+    height: 35px;
+    min-width: 35px;
+    font-size: 1.25rem;
+    border-radius: 8px;
+  }
+
+  .produce-item-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .produce-item-name {
+    font-size: 0.88rem;
+    line-height: 1.25;
+    white-space: normal; /* Don't cut off produce names with ellipsis */
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .produce-item-mandi {
+    font-size: 0.74rem;
+    margin-top: 0.1rem;
+    line-height: 1.2;
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .produce-item-right {
+    margin-left: 0.25rem;
+    flex-shrink: 0;
+  }
+  /* On mobile, avatar already shows category color; hide duplicate text badge to give full width to produce name */
+  .produce-item-tag {
+    display: none;
+  }
+  .produce-unit-pill {
+    font-size: 0.7rem;
+    padding: 0.16rem 0.42rem;
+    white-space: nowrap;
+    border-radius: 5px;
+  }
+  .produce-hover-action {
+    display: none;
+  }
+
+  .produce-autocomplete-footer {
+    padding: 0.4rem 0.65rem;
+    justify-content: center;
+  }
+  .produce-footer-keys {
+    display: none; /* Physical keyboard shortcuts not relevant on touchscreen devices */
+  }
+  .produce-auto-badge {
+    font-size: 0.73rem;
+    text-align: center;
+    justify-content: center;
+  }
 }
