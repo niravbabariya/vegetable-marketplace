@@ -147,10 +147,12 @@ app.use(cors({
 app.use(express.json({ limit: '512kb' }));
 app.use(express.static('public'));
 
+app.set('trust proxy', 1);
+
 // ── IP Rate Limiter ──────────────────────────────────────────────
 const rateLimitMap = new Map();
-const rateLimiter = (maxRequests = 5, windowMs = 15 * 60 * 1000) => (req, res, next) => {
-  const ip = req.ip || req.connection.remoteAddress || 'unknown';
+const rateLimiter = (maxRequests = 30, windowMs = 15 * 60 * 1000) => (req, res, next) => {
+  const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.ip || 'unknown';
   const now = Date.now();
   const record = rateLimitMap.get(ip) || { count: 0, resetTime: now + windowMs };
   if (now > record.resetTime) {
@@ -161,7 +163,7 @@ const rateLimiter = (maxRequests = 5, windowMs = 15 * 60 * 1000) => (req, res, n
   }
   rateLimitMap.set(ip, record);
   if (record.count > maxRequests) {
-    return res.status(429).json({ error: 'Too many attempts. Please try again later.' });
+    return res.status(429).json({ error: 'Too many attempts. Please try again in a few minutes.' });
   }
   next();
 };
