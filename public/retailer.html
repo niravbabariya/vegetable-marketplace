@@ -13,6 +13,7 @@
   <div class="nav-brand" onclick="location.href='/'" style="cursor:pointer;">🌿 Vegetable</div>
   <button class="nav-toggle" aria-label="Toggle navigation" onclick="toggleMobileNav()">☰</button>
   <div class="nav-user">
+    <a href="/customer.html" class="btn-outline btn-sm" style="margin-right:0.6rem;background:#eff6ff;color:#2563eb;border-color:#bfdbfe;text-decoration:none;font-weight:700;display:inline-flex;align-items:center;gap:0.35rem;">🛍️ Browse Market</a>
     <span id="userName" style="font-weight:600;margin-right:0.5rem;color:var(--ink-muted);"></span>
     <a href="#" onclick="logout()" class="btn-logout">Sign out</a>
   </div>
@@ -29,6 +30,7 @@
       <li class="active" onclick="showSection('overviewSection', this)">📊 Overview</li>
       <li onclick="showSection('productsSection', this)">📦 Products</li>
       <li onclick="showSection('ordersSection', this)">🚚 Fulfillment</li>
+      <li onclick="location.href='/customer.html'" style="margin-top:0.6rem;border-top:1px solid var(--border);padding-top:0.65rem;color:#2563eb;font-weight:700;">🛍️ Browse Market →</li>
     </menu>
   </aside>
 
@@ -48,7 +50,19 @@
         <div class="stat-card"><strong id="rDelivered">—</strong><span>Delivered Orders</span></div>
       </div>
 
-      <div class="panel" style="margin-top:1.5rem;">
+      <div class="panel" style="margin-top:1.25rem;background:linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);border:1.5px solid #bfdbfe;">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.8rem;">
+          <div>
+            <h3 style="color:#1d4ed8;margin-bottom:0.25rem;font-family:'Playfair Display',serif;">🛍️ Live Produce Marketplace</h3>
+            <p style="color:#475569;font-size:0.88rem;margin:0;">
+              Check live market rates, compare mandi prices across Gujarat, and view how your listings appear to bulk buyers.
+            </p>
+          </div>
+          <a href="/customer.html" class="btn-primary" style="background:#2563eb;padding:0.65rem 1.3rem;font-size:0.88rem;text-decoration:none;font-weight:700;">Open Marketplace →</a>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:1.25rem;">
         <h3 style="color:var(--gold-light);margin-bottom:0.8rem;font-family:'Playfair Display',serif;">🔒 Privacy-Safe Fulfillment</h3>
         <p style="color:var(--ink-muted);font-size:0.92rem;line-height:1.7">
           Buyers appear as <strong style="color:var(--ink)">anonymous IDs</strong>. You receive item quantities, delivery address, and delivery slot only — no buyer emails or phone numbers are ever shown. This protects both parties and ensures compliant B2B operations.
@@ -63,7 +77,10 @@
           <div class="page-title">Products</div>
           <div class="page-subtitle">Manage your live inventory with MOQ, bulk tiers, and availability.</div>
         </div>
-        <button class="btn-primary" onclick="openModal()" style="padding:0.75rem 1.4rem;">+ Add Product</button>
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+          <a href="/customer.html" class="btn-outline" style="padding:0.75rem 1.2rem;text-decoration:none;display:inline-flex;align-items:center;gap:0.35rem;font-weight:600;">🛍️ View in Market</a>
+          <button class="btn-primary" onclick="openModal()" style="padding:0.75rem 1.4rem;">+ Add Product</button>
+        </div>
       </div>
 
       <div class="toolbar">
