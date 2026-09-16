@@ -10,6 +10,7 @@
 
 <nav class="navbar">
   <div class="nav-brand" onclick="location.href='/'" style="cursor:pointer;">🌿 Vegetable</div>
+  <button class="nav-toggle" aria-label="Toggle navigation" onclick="toggleMobileNav()">☰</button>
   <div class="nav-user">
     <span style="color:var(--gold);font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;">Admin</span>
     <span id="userName"></span>
@@ -227,6 +228,7 @@ function renderUsers() {
     return;
   }
   document.getElementById('users').innerHTML = `
+    <div class="table-responsive">
     <table>
       <thead>
         <tr>
@@ -246,7 +248,8 @@ function renderUsers() {
           <td style="color:var(--ink-muted);font-size:0.87rem">${formatDate(u.createdAt)}</td>
         </tr>`).join('')}
       </tbody>
-    </table>`;
+    </table>
+    </div>`;
 }
 
 function exportUsers() {

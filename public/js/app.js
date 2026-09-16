@@ -14,6 +14,33 @@ function logout() {
   location.href = '/';
 }
 
+function toggleMobileNav() {
+  const navbar = document.querySelector('.navbar');
+  const toggleBtn = document.querySelector('.nav-toggle');
+  if (navbar) {
+    const isExpanded = navbar.classList.toggle('nav-open');
+    if (toggleBtn) {
+      toggleBtn.setAttribute('aria-expanded', isExpanded);
+      toggleBtn.innerHTML = isExpanded ? '✕' : '☰';
+    }
+  }
+}
+
+// Auto close mobile nav on link click or outside click
+document.addEventListener('click', (e) => {
+  const navbar = document.querySelector('.navbar');
+  if (!navbar || !navbar.classList.contains('nav-open')) return;
+  if (!navbar.contains(e.target)) {
+    navbar.classList.remove('nav-open');
+    const toggleBtn = document.querySelector('.nav-toggle');
+    if (toggleBtn) {
+      toggleBtn.setAttribute('aria-expanded', 'false');
+      toggleBtn.innerHTML = '☰';
+    }
+  }
+});
+
+
 // ── Formatting ───────────────────────────────────────────────────
 function formatDate(d) {
   try {

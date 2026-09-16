@@ -11,6 +11,7 @@
 <!-- NAVBAR -->
 <nav class="navbar">
   <div class="nav-brand" onclick="location.href='/'" style="cursor:pointer;">🌿 Vegetable</div>
+  <button class="nav-toggle" aria-label="Toggle navigation" onclick="toggleMobileNav()">☰</button>
   <div class="nav-user">
     <a href="https://wa.me/919879893957?text=Hello%20Vegetable%20Mandi,%20I%20want%20to%20order%20bulk%20produce." target="_blank" class="header-helpline" style="margin-right:0.5rem;">📞 Helpline: +91 98798 93957</a>
     <span id="userName"></span>
@@ -575,6 +576,7 @@ function renderOrderList() {
           </div>
         </div>
 
+        <div class="table-responsive">
         <table style="width:100%;border-collapse:collapse;font-size:0.82rem;margin-bottom:0.8rem;">
           <thead>
             <tr style="background:#f1f5f9;border-bottom:1px solid #cbd5e1;text-align:left;">
@@ -602,6 +604,7 @@ function renderOrderList() {
             }).join('')}
           </tbody>
         </table>
+        </div>
 
         <!-- Itemized Tax & Settlement Breakdown Box -->
         <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:0.8rem;font-size:0.84rem;line-height:1.6;">

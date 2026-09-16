@@ -1,3 +1,14 @@
 node_modules/
 .env
 *.log
+
+# ── Live data files — never commit real user/order data ──────────
+# These are created automatically from data/seed/ on first run.
+# Excluding them means git pull/push will NEVER overwrite your data.
+data/users.json
+data/orders.json
+data/products.json
+
+# ── data/seed/ IS committed to git ───────────────────────────────
+# It contains the safe default admin accounts and demo products.
+# data/seed/ is NOT excluded here — it belongs in the repo.

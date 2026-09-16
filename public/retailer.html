@@ -11,6 +11,7 @@
 <!-- NAVBAR -->
 <nav class="navbar">
   <div class="nav-brand" onclick="location.href='/'" style="cursor:pointer;">🌿 Vegetable</div>
+  <button class="nav-toggle" aria-label="Toggle navigation" onclick="toggleMobileNav()">☰</button>
   <div class="nav-user">
     <span id="userName"></span>
     <a href="#" onclick="logout()">Sign out</a>
@@ -276,6 +277,7 @@ function renderProducts() {
   }
 
   document.getElementById('products').innerHTML = `
+    <div class="table-responsive">
     <table>
       <thead>
         <tr>
@@ -460,6 +462,7 @@ function renderOrders() {
 
     // Item table
     const itemTable = `
+      <div class="table-responsive">
       <table class="item-list">
         <thead><tr><th>Item</th><th>Qty</th><th>Base Price</th><th>Buyer Price</th><th>Your Payout</th></tr></thead>
         <tbody>
@@ -475,7 +478,8 @@ function renderOrders() {
             </tr>`;
           }).join('')}
         </tbody>
-      </table>`;
+      </table>
+      </div>`;
 
     // Action buttons
     let actions = '<div class="order-actions">';
