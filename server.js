@@ -305,16 +305,25 @@ app.post('/api/auth/login', rateLimiter(5, 15 * 60 * 1000), async (req, res) => 
 // ══════════════════════════════════════════════════════════════════
 
 app.get('/api/products', async (req, res) => {
+  let requesterId = null;
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] });
+      requesterId = decoded.id;
+    } catch {}
+  }
+
   const users = await readData('users.json');
   const products = (await readData('products.json'))
     .filter(p => p.status !== 'deleted')
     .map(p => {
       const computed = computeProductPrices(p);
       const retailer = users.find(u => u.id === p.retailerId);
-      // Public product listing: NO user IDs exposed
+      const isOwner = requesterId && (requesterId === p.retailerId || users.find(u => u.id === requesterId)?.role === 'admin');
       return {
         ...computed,
-        retailerId: undefined, // strip internal retailer ID from public response
+        retailerId: isOwner ? p.retailerId : undefined, // Expose internal ID only to the retailer owner / admin
         stock: Number(p.stock) || 0,
         moq: Math.max(1, parseInt(p.moq || 1, 10) || 1),
         available: p.available !== false,
