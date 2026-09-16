@@ -248,6 +248,15 @@ async function init() {
   }
   document.getElementById('userName').textContent = user.name || '';
   document.getElementById('sidebarName').textContent = user.name || '';
+
+  // Initialize autocomplete for Product Name input
+  const pName = document.getElementById('pName');
+  const pCat = document.getElementById('pCategory');
+  const pUnit = document.getElementById('pUnit');
+  if (pName && typeof initProduceAutocomplete === 'function') {
+    initProduceAutocomplete(pName, pCat, pUnit);
+  }
+
   await loadProducts();
   await loadOrders(true);
 }

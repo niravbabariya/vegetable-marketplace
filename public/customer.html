@@ -255,6 +255,13 @@ async function init() {
     showSection('cartSection', document.getElementById('navCart'));
   }
 
+  // Initialize autocomplete for Marketplace Search
+  const searchInput = document.getElementById('search');
+  const catInput = document.getElementById('category');
+  if (searchInput && typeof initProduceAutocomplete === 'function') {
+    initProduceAutocomplete(searchInput, catInput);
+  }
+
   await refreshProducts();
   renderCart();
   if (token) await loadOrders(true);
